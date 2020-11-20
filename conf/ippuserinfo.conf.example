@@ -1,0 +1,17 @@
+[keycloak]
+#https://{server}/auth/realms/{realm}/.well-known/openid-configuration
+server_url=https://{server}/
+realm_name={realm}
+client_id=xxx
+client_secret=xxx
+authorization_url=https://{server}/auth/realms/{realm}/protocol/openid-connect/auth
+token_url=https://{server}/auth/realms/{realm}/protocol/openid-connect/token
+#https://{server}/auth/realms/{realm}
+public_key=xxxx
+
+[database]
+type=xxx
+host=xxx
+username=xxx
+password=xxx
+name=xxx
