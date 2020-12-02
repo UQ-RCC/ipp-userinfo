@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='ipp-userinfo',
@@ -8,18 +8,16 @@ setup(
     author='Hoang Anh Nguyen',
     author_email='uqhngu36@uq.edu.au',
     url='https://github.com/UQ-RCC/ipp-userinfo',
-    packages=[
-        'userinfo',
-        'userinfo.routers',
-    ],
+    packages=find_packages(exclude=["test*"]),
     data_files=[
-        ('/etc/ipp/conf/ippuserinfo.conf', ['conf/ippuserinfo.conf'])
+        ('conf', ['conf/ippuserinfo.conf'])
     ],
     zip_safe=False,
     install_requires=[
             "fastapi==0.61.2",
             "uvicorn==0.12.2",
             "python-keycloak-client==0.2.3",
-            "cowsay==2.0.3"
+            "cowsay==2.0.3",
+            "psycopg2==2.8.6"
     ]
 )
