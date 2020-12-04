@@ -24,7 +24,8 @@ def create_filesexplorer(db: Session, filesxplorer: schemas.FilesExplorerBase):
     filesexplorer = models.FilesExplorer(
                                             username = filesxplorer.username,
                                             component = filesxplorer.component,
-                                            currentpath = filesxplorer.currentpath
+                                            currentpath = filesxplorer.currentpath,
+                                            filters = filesxplorer.filters
                                         )
     db.add(filesexplorer)
     db.commit()
@@ -40,10 +41,12 @@ def update_filesexplorer(db: Session, filesxplorer_id: int, filesxplorer: schema
     db_fileexplorer = get_filesexplorer(db, filesxplorer_id)
     # only update this, relaly
     db_fileexplorer.currentpath = filesxplorer.currentpath
+    db_fileexplorer.filters = filesxplorer.filters
     # now modify lastpaths
-    db_fileexplorer.lastpaths = [db_fileexplorer.currentpath] + db_fileexplorer.lastpaths
-    if len(db_fileexplorer.lastpaths) > 10:
-        db_fileexplorer.lastpaths.pop()
+    if not db_fileexplorer.currentpath in db_fileexplorer.lastpaths:
+        db_fileexplorer.lastpaths = [db_fileexplorer.currentpath] + db_fileexplorer.lastpaths
+        if len(db_fileexplorer.lastpaths) > 10:
+            db_fileexplorer.lastpaths.pop()
     db.commit()
     db.refresh(db_fileexplorer)
     return db_fileexplorer

@@ -32,7 +32,12 @@ def get_filexplorer_pref(component: str,
     pref = udb.crud.get_filesexplorer_by_username_component(db, username, component)
     # create if not exist
     if not pref:
-        default_pref_value = udb.schemas.FilesExplorerBase(username=username, component=component, currentpath='/')
+        default_pref_value = udb.schemas.FilesExplorerBase(
+                                                            username=username, 
+                                                            component=component, 
+                                                            currentpath='/',
+                                                            filters = ''
+                                                            )
         pref = udb.crud.create_filesexplorer(db, default_pref_value)
     return pref
 

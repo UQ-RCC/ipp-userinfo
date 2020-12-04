@@ -26,9 +26,11 @@ class FilesExplorerBase(BaseModel):
     username: str
     component: str
     currentpath: str
+    filters: str
 
 class FilesExplorerUpdate(BaseModel):
     currentpath: str
+    filters: str
 
 class FilesExplorer(FilesExplorerBase):
     id: int

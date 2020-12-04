@@ -4,10 +4,19 @@ import userinfo.keycloak as keycloak
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import user, job, preference, version
 
 userinfoapi = FastAPI()
+
+userinfoapi.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # user
 userinfoapi.include_router(
