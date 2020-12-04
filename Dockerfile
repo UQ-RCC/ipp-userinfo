@@ -11,6 +11,6 @@ RUN apk add --no-cache --virtual .build-deps \
 COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
-RUN python setup.py install
+# RUN python setup.py install
 
 RUN apk del --no-cache .build-deps
