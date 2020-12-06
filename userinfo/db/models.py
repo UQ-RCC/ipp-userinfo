@@ -1,6 +1,5 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime, Interval
 from sqlalchemy.orm import relationship
-from sqlalchemy_json import mutable_json_type
 
 from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy import PickleType
