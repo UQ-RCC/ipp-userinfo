@@ -7,11 +7,8 @@ RUN apk add --no-cache --virtual .build-deps \
     python3-dev \
     musl-dev \
     postgresql-dev 
-
+    
 COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
 RUN python setup.py install
-
-
-RUN apk del --no-cache .build-deps
