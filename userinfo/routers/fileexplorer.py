@@ -9,7 +9,7 @@ import userinfo.keycloak as keycloak
 
 router = APIRouter()
 
-@router.get("/fileexplorer/components")
+@router.get("/fileexplorer/components", response_model=List[str])
 def get_filexplorer_pref(user: dict = Depends(keycloak.decode), db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')
     if not username:
@@ -83,6 +83,6 @@ def delete_bookmark(component: str, prefid: int, bookmarkid: int,
         return HTTPException(status_code=400, detail="Username cannot be empty")
     db_bookmark = udb.crud.get_bookmark(db, bookmarkid)
     if db_bookmark.filesexplorer_id != prefid:
-        return HTTPException(status_code=400, detail="Bookmark not belong tp pref")
+        return HTTPException(status_code=400, detail="Bookmark not belong to pref")
     udb.crud.delete_bookmark(db, bookmarkid)
     return udb.crud.get_bookmarks(db, username, component)

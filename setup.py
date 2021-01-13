@@ -20,6 +20,7 @@ setup(
             "cowsay==2.0.3",
             "psycopg2-binary==2.8.6",
             "sqlalchemy==1.3.20",
-            "sqlalchemy_json==0.4.0"
+            "sqlalchemy_json==0.4.0",
+            "shortuuid==1.0.1"
     ]
 )

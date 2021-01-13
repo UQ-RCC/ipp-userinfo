@@ -1,13 +1,28 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Response, Depends, HTTPException
+import userinfo.db as udb
+import userinfo.keycloak as keycloak
+from typing import List, Optional
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 
-@router.get("/jobs")
-async def get_jobs():
-    return {}
+@router.get("/{jobid}", response_model=udb.schemas.Job)
+def get_job(    jobid: str,
+                user: dict = Depends(keycloak.decode), 
+                db: Session = Depends(udb.get_db),
+                ):
+    username = user.get('preferred_username')
+    return udb.crud.get_job(db, username, jobid)
 
 
-@router.get("/jobs/{jobid}")
-async def get_job(jobid: int):
-    return {}
+@router.put("/{jobid}")
+def update_job(    jobid: str,
+                jobdata: udb.schemas.JobCreate,
+                user: dict = Depends(keycloak.decode), 
+                db: Session = Depends(udb.get_db)):
+    username = user.get('preferred_username')
+    try:
+        return udb.crud.update_job(db, username, jobid, jobdata)
+    except udb.crud.NotfoundException:
+        return HTTPException(status_code=404, detail=f"Not found job with id: {jobid}")
 

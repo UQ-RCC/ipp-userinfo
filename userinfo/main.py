@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import user, job, preference, version
+from .routers import user, job, fileexplorer, decon, version
 
 userinfoapi = FastAPI()
 
@@ -30,14 +30,23 @@ userinfoapi.include_router(
     job.router,
     prefix="/jobs",
     tags=["jobs"],
+    responses={404: {"description": "Not found"}},
+)
+
+# decon
+userinfoapi.include_router(
+    decon.router,
+    prefix="/preferences",
+    tags=["decons"],
     dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
-# preference
+
+# fileexplorer
 userinfoapi.include_router(
-    preference.router,
+    fileexplorer.router,
     prefix="/preferences",
-    tags=["preferences"],
+    tags=["fileexplorer"],
     dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )

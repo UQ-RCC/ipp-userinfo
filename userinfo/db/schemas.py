@@ -1,6 +1,8 @@
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Json
+from datetime import datetime
+from . import models
 
 #################################
 ### bookmark
@@ -39,3 +41,196 @@ class FilesExplorer(FilesExplorerBase):
     
     class Config:
         orm_mode = True
+
+#################################
+### Templates
+#################################
+class TemplateBase(BaseModel):
+    username: str
+    name: str 
+    setting_id: int
+
+class TemplateCreate(TemplateBase):
+    pass
+
+class Template(TemplateBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+#################################
+### Job
+#################################
+class JobBase(BaseModel):
+    username: str
+    jobid: Optional[int] = None
+    jobname: Optional[str] = None
+    start: datetime = None  
+    end: Optional[datetime] = None 
+    status: str = 'SUBMITTED'
+    total: Optional[int] = None
+    progress: Optional[int] = None
+    ncpus: Optional[int] = None
+    nnodes: Optional[int] = None
+    reqgres: Optional[int] = None
+    reqmem: Optional[float] = None
+    decon_id: Optional[int] = None
+
+class JobCreate(JobBase):
+    pass
+
+class Job(JobBase):
+    id: str
+    
+    class Config:
+        orm_mode = True
+
+
+
+#################################
+### decons
+#################################
+class DeconBase(BaseModel):
+    setting_id: int
+    series_id: int
+    jobs: List[Job] = []
+
+class DeconCreate(DeconBase):
+    pass
+
+class Decon(DeconBase):
+    id: int
+    deconpage_id: str
+    class Config:
+        orm_mode = True
+
+
+
+
+##################################
+### decon page
+##################################
+class DeconPage(BaseModel):
+    username: str
+    decons: List[Decon] = []
+
+    class Config:
+        orm_mode = True
+
+
+#################################
+### Setting
+#################################
+class SettingBase(BaseModel):
+    psfType : models.PsfTypes = models.PsfTypes.LightSheet
+    ### metadata fields
+    dr : Optional[float] = None 
+    dz : Optional[float] = None
+    readSpacing : Optional[bool] = None
+    x : Optional[int] = None
+    y : Optional[int] = None
+    z : Optional[int] = None
+    c : Optional[int] = None
+    t : Optional[int] = None
+    swapZT : Optional[bool] = None
+    ### PSF
+    generatePsf : Optional[bool] = None
+    psfModel : models.PsfModels = models.PsfModels.Scalar
+    ns : Optional[float] = None
+    mediumRIOption : models.MediumRIOptions = models.MediumRIOptions.Water
+    NA : Optional[float] = None
+    lightSheetIlluminationNA : Optional[float] = None
+    RI : Optional[float] = None
+    objectiveRIOption : models.ObjectiveRIOptions = models.ObjectiveRIOptions.Water
+    psfFile : Optional[str] = None
+    psfDr : Optional[float] = None
+    psfDz : Optional[float] = None
+    psfReadSpacing : Optional[bool] = None
+    psfX : Optional[int] = None
+    psfY : Optional[int] = None
+    psfZ : Optional[int] = None
+    swapPsfZT : Optional[bool] = None
+    psfC : Optional[int] = None
+    psfT : Optional[int] = None
+    ### deskew
+    deskew : Optional[bool] = None
+    keepDeskew : Optional[bool] = None
+    background : Optional[float] = None
+    stddev : Optional[float] = None
+    unit : models.Unit = models.Unit.µm
+    pixelWidth : Optional[float] = None
+    pixelHeight : Optional[float] = None
+    pixelDepth : Optional[float] = None
+    angle: Optional[float] = None
+    threshold: Optional[float] = None
+    ### iterations
+    channels : list = []
+    backgroundType : models.BackgroundType = models.BackgroundType.Non
+    saveEveryIterations : Optional[int] = None
+    ### noise surpression
+    regularizationType : models.RegularizationType = models.RegularizationType.Non
+    automaticRegularizationScale : Optional[bool] = None
+    regularization : Optional[float] = None
+    prefilter : models.PreFilterType = models.PreFilterType.Non
+    postfilter : models.PostFilterType = models.PostFilterType.Non
+    ### advanced
+    blindDeconvolution : Optional[bool] = None
+    padding : dict = {}
+    tiling : dict = {}
+    scaling : models.ScalingType = models.ScalingType.SameAsInput
+    fileformat : models.FileFormatType = models.FileFormatType.TIFF
+    split : models.SplitChannelType = models.SplitChannelType.NoSplit
+    splitIdx : Optional[int] = None
+    ### devices
+    numberOfParallelJobs : Optional[int] = None
+    mem : Optional[float] = None
+    gpus : Optional[int] = None
+
+class SettingCreate(SettingBase):
+    pass
+
+class Setting(SettingBase):
+    id: int
+    template: Template = None
+    decon: Decon = None
+    class Config:
+        orm_mode = True
+
+
+
+#################################
+### Series
+#################################
+class SeriesBase(BaseModel):
+    path: str
+    isfolder: Optional[bool] = None
+    dr: Optional[float] = None
+    dz: Optional[float] = None
+    x: Optional[int] = None
+    y: Optional[int] = None
+    z: Optional[int] = None
+    c: Optional[int] = None
+    t: Optional[int] = None
+    maxFileSizeInMb: Optional[float] = None
+    total: Optional[int] = None
+    outputPath: Optional[str] = None
+    background: Optional[float] = None
+    stddev: Optional[float] = None
+    unit: models.Unit = models.Unit.µm
+    pixelWidth: Optional[float] = None
+    pixelHeight: Optional[float] = None
+    pixelDepth: Optional[float] = None
+    
+class SeriesCreate(SeriesBase):
+    pass
+
+class Series(SeriesBase):
+    id: int
+    decons: List[Decon] = []
+    
+    class Config:
+        orm_mode = True
+
+
