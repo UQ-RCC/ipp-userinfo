@@ -17,11 +17,11 @@ def get_deconpage(user: dict = Depends(keycloak.decode), db: Session = Depends(u
 
 
 @router.get("/deconpage/decons", response_model=List[udb.schemas.Decon])
-def get_decons_in_page(deconid: int,
-                        user: dict = Depends(keycloak.decode), 
-                        db: Session = Depends(udb.get_db)):
+def get_decons_in_page(user: dict = Depends(keycloak.decode), 
+                        db: Session = Depends(udb.get_db),
+                        path: Optional[str] = None):
     username = user.get('preferred_username')
-    return udb.crud.get_decons(db, username)
+    return udb.crud.get_decons(db, username, path)
     
 @router.post("/deconpage/decons", response_model=udb.schemas.Decon)
 def create_decon(series_id: int,
@@ -39,6 +39,15 @@ def get_decon(  deconid: int,
     username = user.get('preferred_username')
     db_decon = udb.crud.get_decon_from_deconpage(db, username, deconid)
     return db_decon
+
+
+@router.delete("/deconpage/decons")
+def delete_decon_using_path(user: dict = Depends(keycloak.decode), 
+                        db: Session = Depends(udb.get_db),
+                        path: Optional[str] = None):
+    username = user.get('preferred_username')
+    return udb.crud.delete_decon_from_path(db, username, path)
+
 
 @router.delete("/deconpage/decons/{deconid}")
 def delete_decon(
@@ -103,12 +112,12 @@ def update_settings(
                     db: Session = Depends(udb.get_db)):
     """update series"""
     username = user.get('preferred_username')
-    try:
-        udb.crud.update_setting(db, username, settingid, setting)
-    except udb.crud.NotfoundException as e:
+    stored_setting = udb.crud.get_one_setting(db, settingid)
+    if not stored_setting:
         return HTTPException(status_code=400, detail=f"Could not find the setting with id: {settindid}")
-    except udb.crud.PermissionException as e:
+    if not stored_setting.decon or stored_setting.decon.deconpage_id != username:
         return HTTPException(status_code=400, detail=f"Setting with id: {settingid} does not belong to user: {username}")
+    udb.crud.update_setting(db, username, settingid, setting)
         
 
 

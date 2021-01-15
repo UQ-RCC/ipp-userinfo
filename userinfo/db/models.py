@@ -150,6 +150,7 @@ class Setting(Base):
     '''
     __tablename__ = 'setting'
     id = Column(Integer, primary_key=True, index=True)
+    outputPath = Column(String, primary_key=False, unique=False, index=False, nullable=True)
     ### illumination type
     psfType = Column(Enum(PsfTypes), primary_key=False, index=False, nullable=False, default=PsfTypes.LightSheet) 
     ### metadata fields

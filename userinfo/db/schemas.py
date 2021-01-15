@@ -124,6 +124,7 @@ class DeconPage(BaseModel):
 ### Setting
 #################################
 class SettingBase(BaseModel):
+    outputPath: Optional[str] = None
     psfType : models.PsfTypes = models.PsfTypes.LightSheet
     ### metadata fields
     dr : Optional[float] = None 

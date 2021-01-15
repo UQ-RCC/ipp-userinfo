@@ -1,3 +1,4 @@
+import base64
 from sqlalchemy.orm import Session
 
 from . import models, schemas
@@ -134,11 +135,36 @@ def delete_decon(db: Session, decon: models.Decon):
     db.delete(decon)
     db.commit()
  
-def get_decons(db: Session, usename: str):
+def delete_decon_from_path(db: Session, username: str, path: str):
+    # a simple join
+    decoded_path = base64.b64decode(path).decode("utf-8")
+    for d, s in db.query(models.Decon, models.Series).\
+                filter(models.Decon.series_id == models.Series.id).\
+                filter(models.Decon.deconpage_id == username).\
+                filter(models.Series.path == decoded_path).all():
+        db.delete(d)
+    db.commit()
+    
+
+def get_decons(db: Session, username: str, path: str):
     db_deconpage = get_deconpage(db, username)
     if not db_deconpage:
-        db_deconpage = create_deconpage(db, username)    
-    return db_deconpage.decons
+        db_deconpage = create_deconpage(db, username)
+    decons = []
+    if path:
+        decoded_path = base64.b64decode(path).decode("utf-8")
+        print ("===============")
+        print (f"decoded path: {decoded_path}") 
+        # a simple join
+        for d, s in db.query(models.Decon, models.Series).\
+                    filter(models.Decon.series_id == models.Series.id).\
+                    filter(models.Decon.deconpage_id == username).\
+                    filter(models.Series.path == decoded_path).all():
+            decons.append(d)
+        print (len(decons))
+    else:
+        decons = db_deconpage.decons
+    return decons
     
 def get_decon_from_deconpage(db: Session, usename: str, deconid: int):
     decon = db.query(models.Decon).\
@@ -194,10 +220,7 @@ def create_series(db: Session, series: schemas.SeriesCreate):
     return db_serie
 
 def update_serie(db: Session, serie_id: int, series: schemas.SeriesCreate):
-    stored_serie = get_one_series(serie_id)
-    if not stored_serie:
-        raise NotfoundException('Cannot find the serie')
-    stored_serie.update(series.dict())
+    db.query(models.Series).filter(models.Series.id == serie_id).update(series.dict())
     db.commit()
 
 ## settings
@@ -208,12 +231,7 @@ def get_one_setting(db: Session, setting_id: int):
     return db.query(models.Setting).filter(models.Setting.id == setting_id).one()
 
 def update_setting(db: Session, username: str, setting_id: int, setting: schemas.SettingCreate):
-    stored_setting = get_one_series(setting_id)
-    if not stored_setting:
-        raise NotfoundException('Cannot find the setting')
-    if not stored_setting.decon or stored_setting.decon.deconpage_id != username:
-        raise PermissionException(f'Setting does not belong to {username}')
-    stored_setting.update(setting.dict())
+    db.query(models.Setting).filter(models.Setting.id == setting_id).update(setting.dict())
     db.commit()
 
 
@@ -268,10 +286,10 @@ def get_job(db:Session, username: str, jobid: str):
 
 
 def update_job(db:Session, username: str, jobid: str, job: schemas.JobCreate):
-    stored_job = get_job(db, username, jobid)
-    if not stored_setting:
-        raise NotfoundException('Cannot find the job')
-    stored_job.update(job.dict())
+    db.query(models.Job).\
+        filter(models.Job.username == username).\
+        filter(models.Job.id == jobid).\
+        update(job.dict())
     db.commit()
 
 

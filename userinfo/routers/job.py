@@ -21,8 +21,5 @@ def update_job(    jobid: str,
                 user: dict = Depends(keycloak.decode), 
                 db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')
-    try:
-        return udb.crud.update_job(db, username, jobid, jobdata)
-    except udb.crud.NotfoundException:
-        return HTTPException(status_code=404, detail=f"Not found job with id: {jobid}")
-
+    return udb.crud.update_job(db, username, jobid, jobdata)
+    
