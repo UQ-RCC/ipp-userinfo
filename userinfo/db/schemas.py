@@ -64,14 +64,16 @@ class Template(TemplateBase):
 ### Job
 #################################
 class JobBase(BaseModel):
-    username: str
+    username: str = None
+    email: str = None
     jobid: Optional[int] = None
     jobname: Optional[str] = None
     start: datetime = None  
     end: Optional[datetime] = None 
     status: str = 'SUBMITTED'
     total: Optional[int] = None
-    progress: Optional[int] = None
+    success: Optional[int] = None
+    fail: Optional[int] = None
     ncpus: Optional[int] = None
     nnodes: Optional[int] = None
     reqgres: Optional[int] = None
@@ -95,14 +97,17 @@ class Job(JobBase):
 class DeconBase(BaseModel):
     setting_id: int
     series_id: int
-    jobs: List[Job] = []
-
+    step: int = 1
+    selected: bool = False
+    visitedSteps: List[int] = []
+    
 class DeconCreate(DeconBase):
     pass
 
 class Decon(DeconBase):
     id: int
     deconpage_id: str
+    jobs: List[Job] = []
     class Config:
         orm_mode = True
 
@@ -160,7 +165,7 @@ class SettingBase(BaseModel):
     keepDeskew : Optional[bool] = None
     background : Optional[float] = None
     stddev : Optional[float] = None
-    unit : models.Unit = models.Unit.µm
+    unit : Optional[models.Unit] = None
     pixelWidth : Optional[float] = None
     pixelHeight : Optional[float] = None
     pixelDepth : Optional[float] = None
@@ -185,9 +190,10 @@ class SettingBase(BaseModel):
     split : models.SplitChannelType = models.SplitChannelType.NoSplit
     splitIdx : Optional[int] = None
     ### devices
-    numberOfParallelJobs : Optional[int] = None
+    instances : Optional[int] = None
     mem : Optional[float] = None
     gpus : Optional[int] = None
+    valid: bool = False
 
 class SettingCreate(SettingBase):
     pass
@@ -219,7 +225,7 @@ class SeriesBase(BaseModel):
     outputPath: Optional[str] = None
     background: Optional[float] = None
     stddev: Optional[float] = None
-    unit: models.Unit = models.Unit.µm
+    unit: Optional[models.Unit] = None
     pixelWidth: Optional[float] = None
     pixelHeight: Optional[float] = None
     pixelDepth: Optional[float] = None
@@ -229,7 +235,7 @@ class SeriesCreate(SeriesBase):
 
 class Series(SeriesBase):
     id: int
-    decons: List[Decon] = []
+    # decons: List[Decon] = [] --> uncomment htis will fali at get series
     
     class Config:
         orm_mode = True

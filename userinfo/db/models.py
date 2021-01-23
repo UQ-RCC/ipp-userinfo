@@ -1,4 +1,4 @@
-import enum
+import enum, datetime
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Enum, DateTime, Interval
 from sqlalchemy.orm import relationship
 
@@ -57,7 +57,7 @@ class Series(Base):
     outputPath = Column(String, unique=False, index=False, nullable=True)
     background = Column(Float, primary_key=False, index=False, nullable=True)    
     stddev = Column(Float, primary_key=False, index=False, nullable=True)
-    unit = Column(Enum(Unit), unique=False, index=False, nullable=True, default=Unit.µm)
+    unit = Column(Enum(Unit), unique=False, index=False, nullable=True)
     pixelWidth = Column(Float, primary_key=False, index=False, nullable=True) 
     pixelHeight = Column(Float, primary_key=False, index=False, nullable=True) 
     pixelDepth = Column(Float, primary_key=False, index=False, nullable=True) 
@@ -193,7 +193,7 @@ class Setting(Base):
     keepDeskew = Column(Boolean, primary_key=False, index=False, nullable=True)
     background = Column(Float, primary_key=False, index=False, nullable=True)    
     stddev = Column(Float, primary_key=False, index=False, nullable=True)    
-    unit = Column(Enum(Unit), unique=False, index=False, nullable=True, default=Unit.µm)
+    unit = Column(Enum(Unit), unique=False, index=False, nullable=True)
     pixelWidth = Column(Float, primary_key=False, index=False, nullable=True) 
     pixelHeight = Column(Float, primary_key=False, index=False, nullable=True) 
     pixelDepth = Column(Float, primary_key=False, index=False, nullable=True)
@@ -222,10 +222,12 @@ class Setting(Base):
     splitIdx = Column(Integer, primary_key=False, index=False, nullable=True, default=0)
 
     ### devices
-    numberOfParallelJobs = Column(Integer, primary_key=False, index=False, nullable=True)
+    instances = Column(Integer, primary_key=False, index=False, nullable=True)
     mem = Column(Float, primary_key=False, index=False, nullable=True)
     gpus = Column(Integer, primary_key=False, index=False, nullable=True)
 
+    # is this setting valid
+    valid = Column(Boolean, primary_key=False, index=False, default=False)
     # template ref
     template = relationship("Template", uselist=False, back_populates="setting")
     # decon
@@ -259,7 +261,11 @@ class Decon(Base):
     deconpage = relationship("DeconPage", back_populates="decons")
     ## job
     jobs = relationship("Job", back_populates="decon")
-
+    # steps
+    step = Column(Integer, primary_key=False, index=False, default=1)
+    visitedSteps = Column(MutableList.as_mutable(PickleType), default=[])
+    selected = Column(Boolean, primary_key=False, index=False, default=False)
+    
 class DeconPage(Base):
     __tablename__ = 'deconpage'
     username = Column(String, primary_key=True, index=True)
@@ -269,30 +275,24 @@ class DeconPage(Base):
 def generate_uuid():
     return shortuuid.uuid()
 
-
-class JobStatus(enum.Enum):
-    NoSplit = 0 
-    SplitChannels = 1
-    SplitTimepoints = 2
-    SplitChannelsAndTimepoints = 3
-
-
+# job - decon job
 class Job(Base):
     __tablename__ = 'job'
     # same as job id in slurm
     id = Column(String(50), primary_key=True, default=generate_uuid())
-    username = Column(String, primary_key=False, index=False, nullable=False)
+    username = Column(String, primary_key=False, index=False, nullable=True)
+    email = Column(String, primary_key=False, index=False, nullable=True)
     # job data
     jobid = Column(Integer, primary_key=False, index=False, nullable=True)
     jobname = Column(String, primary_key=False, index=False, nullable=True)
-    start =  Column(String, primary_key=False, index=False, nullable=True)
-    end =  Column(String, primary_key=False, index=False, nullable=True)
+    start =  Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.utcnow)
+    end =  Column(DateTime, primary_key=False, index=False, nullable=True)
     status = Column(String, primary_key=False, index=False, nullable=False, default='SUBMITTED')
     ## total number of files to cruch
-    total = Column(Integer, primary_key=False, index=False, nullable=True)
+    total = Column(Integer, primary_key=False, index=False, nullable=True, default=0)
     ## processed files so far
-    progress = Column(Integer, primary_key=False, index=False, nullable=True)
-
+    success = Column(Integer, primary_key=False, index=False, nullable=True, default=0)
+    fail = Column(Integer, primary_key=False, index=False, nullable=True, default=0)
     ncpus = Column(Integer, primary_key=False, index=False, nullable=True)
     nnodes = Column(Integer, primary_key=False, index=False, nullable=True)
     reqgres = Column(Integer, primary_key=False, index=False, nullable=True)

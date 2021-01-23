@@ -8,6 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import user, job, fileexplorer, decon, version
 
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s [%(name)s] %(levelname)s : %(message)s')
+logger = logging.getLogger(__name__)
+
+
 userinfoapi = FastAPI()
 
 userinfoapi.add_middleware(
@@ -57,3 +62,4 @@ userinfoapi.include_router(
     responses={404: {"description": "Not found"}},
 )
 
+logger.info("Start ippuserinfo")

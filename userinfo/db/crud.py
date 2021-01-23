@@ -1,7 +1,12 @@
 import base64
 from sqlalchemy.orm import Session
+from sqlalchemy import inspect
 
 from . import models, schemas
+from typing import List
+import shortuuid, enum, datetime
+
+import userinfo.mail as mail
 
 class PermissionException(Exception):
     pass
@@ -166,30 +171,83 @@ def get_decons(db: Session, username: str, path: str):
         decons = db_deconpage.decons
     return decons
     
-def get_decon_from_deconpage(db: Session, usename: str, deconid: int):
+def get_decon_from_deconpage(db: Session, username: str, deconid: int):
     decon = db.query(models.Decon).\
                 filter(models.Decon.id == deconid).\
-                filter(models.Decon.deconpage_id == usename).\
+                filter(models.Decon.deconpage_id == username).\
                 first()
     return decon
 
-def create_decon_and_jobs(db:Session, username: str, decon_id: int, numberofjobs: int):
+def update_decon(db: Session, username: str, deconid: int, decon: schemas.DeconCreate, setting: schemas.SettingCreate):
+    """
+    Update decon - settings
+    """
+    # update decon
+    existing_decon_dict = row2dict(get_decon_from_deconpage(db, username, deconid), True)
+    stored_decon_model = schemas.Decon(**existing_decon_dict)
+    update_decon_data = decon.dict(exclude_unset=True)
+    updated_decon_item = stored_decon_model.copy(update=update_decon_data)
+    updated_decon_item_dict = updated_decon_item.dict()
+    updated_decon_item_dict.pop("jobs")
+    # it does not like list of jobs as it is list of immutable dict
+    db.query(models.Decon).filter(models.Decon.id == deconid).update(updated_decon_item_dict)
+    # update setting
+    setting_id = existing_decon_dict.get("setting_id")
+    existing_setting = get_one_setting(db, setting_id)
+    existing_setting_dict = row2dict(existing_setting)
+    stored_setting_model = schemas.SettingCreate(**existing_setting_dict)
+    update_setting_data = setting.dict(exclude_unset=True)
+    updated_setting_item = stored_setting_model.copy(update=update_setting_data)
+    db.query(models.Setting).filter(models.Setting.id == setting_id).update(updated_setting_item.dict())
+    db.commit()
+
+
+def row2dict(row, keep_id = False):
+    d = {}
+    for column in row.__table__.columns:
+        if not keep_id and column.name == 'id':
+            continue
+        row_val = getattr(row, column.name)
+        if isinstance(row_val, enum.Enum):
+            row_val = row_val.value
+        d[column.name] = row_val
+    return d
+
+def object_as_dict(obj):
+    return {c.key: getattr(obj, c.key) for c in inspect(obj).mapper.column_attrs}
+
+
+def create_decon_and_jobs(db:Session, username: str, email: str, decon_id: int, numberofjobs: int):
     """Create a new decon from the given decon_id, and create jobs with it"""
     decon = db.query(models.Decon).\
-                filter(models.Decon.id == deconid).\
-                filter(models.Decon.deconpage_id == usename).\
+                filter(models.Decon.id == decon_id).\
+                filter(models.Decon.deconpage_id == username).\
                 one()
     if not decon:
         raise NotfoundException("Cannot find the given decon under this username")
+    # create a new setting, reasons: existing setting can be changed
+    # no need to create a new series, as it is always there
+    existing_setting = db.query(models.Setting).\
+                filter(models.Setting.id == decon.setting_id).\
+                one()
+    existing_setting_dict = row2dict(existing_setting)
+    # print(existing_setting_dict)
+    # print (object_as_dict(existing_setting))
+    new_setting_schema = schemas.SettingBase(**existing_setting_dict)
+    new_setting = models.Setting(**new_setting_schema.dict())
+    db.add(new_setting)
+    db.flush()
+    # then create decon
     # create decon first
-    db_decon = models.Decon(setting_id = decon.setting_id,
+    db_decon = models.Decon(setting_id = new_setting.id,
                             series_id = decon.series_id)
     db.add(db_decon)
     db.flush()
     # create jobs accordinly
     created_jobs = []
     for i in range(numberofjobs):
-        db_job = models.Job(username = username, decon_id = db_decon.id)
+        db_job = models.Job(id=shortuuid.uuid(), username = username, 
+                            email=email, decon_id = db_decon.id)
         db.add(db_job)
         db.flush()
         db.refresh(db_job)
@@ -219,10 +277,6 @@ def create_series(db: Session, series: schemas.SeriesCreate):
     print (db_serie)
     return db_serie
 
-def update_serie(db: Session, serie_id: int, series: schemas.SeriesCreate):
-    db.query(models.Series).filter(models.Series.id == serie_id).update(series.dict())
-    db.commit()
-
 ## settings
 def get_all_settings(db: Session):
     return db.query(models.Setting).all()
@@ -231,7 +285,12 @@ def get_one_setting(db: Session, setting_id: int):
     return db.query(models.Setting).filter(models.Setting.id == setting_id).one()
 
 def update_setting(db: Session, username: str, setting_id: int, setting: schemas.SettingCreate):
-    db.query(models.Setting).filter(models.Setting.id == setting_id).update(setting.dict())
+    existing_setting = get_one_setting(db, setting_id)
+    existing_setting_dict = row2dict(existing_setting)
+    stored_item_model = schemas.SettingCreate(**existing_setting_dict)
+    update_data = setting.dict(exclude_unset=True)
+    updated_item = stored_item_model.copy(update=update_data)
+    db.query(models.Setting).filter(models.Setting.id == setting_id).update(updated_item.dict())
     db.commit()
 
 
@@ -278,18 +337,135 @@ def get_jobs(db:Session, username: str):
             filter(models.Job.username == username).\
             all()
 
-def get_job(db:Session, username: str, jobid: str):
+def get_job(db:Session, jobid: str):
     return db.query(models.Job).\
-            filter(models.Job.username == username).\
             filter(models.Job.id == jobid).\
             one()
 
+def create_email_contents(finished_jobs, series, setting):
+    """
+    Create html contents of the emails
+    """
+    contents = f"""
+    <html>
+        <head></head>
+        <body>
+            <p>Dear Image Processing Portal user!<br />
 
-def update_job(db:Session, username: str, jobid: str, job: schemas.JobCreate):
+            <p>The { 'series' if series.isfolder else 'file' } <b>{ series.path }</b> has been processed! <p/>
+            
+            <p>The following jobs are created: <br />
+            <table style="width:100%; border-collapse:collapse;">
+                <tr>
+                    <th style="border: 1px solid black;">Job ID</th>
+                    <th style="border: 1px solid black;">Job name</th>
+                    <th style="border: 1px solid black;">Start</th> 
+                    <th style="border: 1px solid black;">Finish</th>
+                    <th style="border: 1px solid black;">Total files</th>
+                    <th style="border: 1px solid black;">Success</th>
+                    <th style="border: 1px solid black;">Fail</th>
+                </tr>
+            """
+    for job in finished_jobs:
+        contents = contents + f"""
+                                <tr>
+                                    <td style="border: 1px solid black;"> {job.jobid} </td>
+                                    <td style="border: 1px solid black;"> {job.jobname} </td>
+                                    <td style="border: 1px solid black;"> {job.start} </td>
+                                    <td style="border: 1px solid black;"> {job.end} </td>
+                                    <td style="border: 1px solid black;"> {job.total} </td>
+                                    <td style="border: 1px solid black;"> {job.success} </td>
+                                    <td style="border: 1px solid black;"> {job.fail} </td>
+                                </tr>
+                                """
+    contents = f"{contents}</table> <p/><p/>"
+    # now list the settings fields
+    contents = f"""{contents} The following parameters are used for these jobs:<br/>
+                    <table style="width:100%; border-collapse:collapse;">
+                    <tr>
+                        <th style="border: 1px solid black;">Parameter</th>
+                        <th style="border: 1px solid black;">value</th>
+                    </tr>
+                """
+    setting_dict = row2dict(setting)
+    for param in setting_dict:
+        # not interested in id
+        if "id" in param:
+            continue
+        else:
+            contents = contents + f"""
+                                <tr>
+                                    <td style="border: 1px solid black;"> {param} </td>
+                                    <td style="border: 1px solid black;"> {setting_dict.get(param)} </td>
+                                </tr>"""
+    contents = f"{contents}</table> <p/><p/>"
+
+    contents = f"{contents} Best Regards,"
+    return contents
+
+def update_job(db:Session, jobid: str, job: schemas.JobCreate):
+    existing_job = get_job(db, jobid)
+    existing_job_dict = row2dict(existing_job)
+    stored_item_model = schemas.JobCreate(**existing_job_dict)
+    update_data = job.dict(exclude_unset=True)
+    if update_data.get('status') in ('FAILED', 'COMPLETE'):
+        update_data['end'] = datetime.datetime.utcnow()
+    updated_item = stored_item_model.copy(update=update_data)
     db.query(models.Job).\
-        filter(models.Job.username == username).\
         filter(models.Job.id == jobid).\
-        update(job.dict())
+        update(updated_item.dict())
+    db.commit()
+    # check if the job stat is FAIL or COMPLETE
+    if 'status' in update_data.keys():
+        new_job_stat = update_data.get('status')
+        # get decon_id from existing job
+        decon_id = existing_job_dict.get('decon_id')
+        if new_job_stat in ('FAILED', 'COMPLETE'):
+            total_jobs = db.query(models.Job).filter(models.Job.decon_id == decon_id).all()
+            # meaning a new job is done/or failed
+            finished_jobs = db.query(models.Job).\
+                filter(models.Job.decon_id == decon_id).\
+                filter(models.Job.status.in_(['FAILED', 'COMPLETE'])).\
+                all()
+            if len(total_jobs) == len(finished_jobs):
+                # get settings and series
+                decon = db.query(models.Decon).filter(models.Decon.id == decon_id).one()
+                series = db.query(models.Series).filter(models.Series.id == decon.series_id).one()
+                setting = db.query(models.Setting).filter(models.Setting.id == decon.setting_id).one()
+                # send email
+                if series.isfolder:
+                    subject = 'Your series have been processed!'
+                else:
+                    subject = 'Your files have been processed!'
+                contents = create_email_contents(finished_jobs, series, setting)
+                mail.send_mail(existing_job_dict.get('email'), subject, contents)
+
+
+def delete_job(db:Session, username: str, jobid: str):
+    job = db.query(models.Job).\
+        filter(models.Job.username == username).\
+        filter(models.Job.id == jobid).one()
+    # get decon with job
+    decon = db.query(models.Decon).\
+        filter(models.Decon.id == job.decon_id).one()
+    db.delete(job)
+    db.delete(decon)
     db.commit()
 
 
+def delete_jobs(db:Session, username: str, jobs: List[str]):
+    # query
+    jobslist = db.query(models.Job).\
+        filter(models.Job.username == username).\
+        filter(models.Job.id.in_(jobs)).all()
+    # get decons ids
+    decon_ids = []
+    for job in jobslist:
+        decon_ids.append(job.decon_id)
+    # delete all jobs given
+    db.query(models.Job).\
+        filter(models.Job.username == username).\
+        filter(models.Job.id.in_(jobs)).delete(synchronize_session=False)
+    db.query(models.Decon).\
+        filter(models.Decon.id.in_(decon_ids)).delete(synchronize_session=False)
+    db.commit()

@@ -32,6 +32,17 @@ def create_decon(series_id: int,
     db_decon = udb.crud.create_decon_to_deconpage(db, username, series_id, setting)
     return db_decon
 
+@router.put("/deconpage/decons/{deconid}")
+def update_decon(  deconid: int,
+                decon: udb.schemas.DeconCreate,
+                setting: udb.schemas.SettingCreate,
+                user: dict = Depends(keycloak.decode), 
+                db: Session = Depends(udb.get_db)):
+    username = user.get('preferred_username')
+    db_decon = udb.crud.update_decon(db, username, deconid, decon, setting)
+    return db_decon
+
+
 @router.get("/deconpage/decons/{deconid}", response_model=udb.schemas.Decon)
 def get_decon(  deconid: int,
                 user: dict = Depends(keycloak.decode), 
@@ -56,7 +67,7 @@ def delete_decon(
                 db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')
     db_decon = udb.crud.get_decon_from_deconpage(db, username, deconid)
-    if not db_decon:
+    if db_decon:
         udb.crud.delete_decon(db, db_decon)
     else:
         return HTTPException(status_code=400, detail=f"Either no decon with {deconid} or not belong to this user")
@@ -176,11 +187,26 @@ def create_jobs(
                 db: Session = Depends(udb.get_db)):
     """create jobs"""
     username = user.get('preferred_username')
+    email = user.get('email')  
     try:
-        return udb.crud.create_decon_and_jobs(db, username, decon_id, numberofjobs)
+        return udb.crud.create_decon_and_jobs(db, username, email, decon_id, numberofjobs)
     except udb.crud.NotfoundException:
         return HTTPException(status_code=404, detail=f"Not found decon with id: {decon_id}")
 
 
 
+@router.delete("/jobs/{jobid}")
+def delete_job( jobid: str,
+                user: dict = Depends(keycloak.decode), 
+                db: Session = Depends(udb.get_db)):
+    username = user.get('preferred_username')
+    return udb.crud.delete_job(db, username, jobid)
+
+
+@router.delete("/jobs")
+def delete_jobs( jobs: List[str],
+                user: dict = Depends(keycloak.decode), 
+                db: Session = Depends(udb.get_db)):
+    username = user.get('preferred_username')
+    return udb.crud.delete_jobs(db, username, jobs)
 

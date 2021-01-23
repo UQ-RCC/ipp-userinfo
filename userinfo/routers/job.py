@@ -8,18 +8,14 @@ router = APIRouter()
 
 @router.get("/{jobid}", response_model=udb.schemas.Job)
 def get_job(    jobid: str,
-                user: dict = Depends(keycloak.decode), 
                 db: Session = Depends(udb.get_db),
                 ):
-    username = user.get('preferred_username')
-    return udb.crud.get_job(db, username, jobid)
+    return udb.crud.get_job(db, jobid)
 
 
 @router.put("/{jobid}")
 def update_job(    jobid: str,
                 jobdata: udb.schemas.JobCreate,
-                user: dict = Depends(keycloak.decode), 
                 db: Session = Depends(udb.get_db)):
-    username = user.get('preferred_username')
-    return udb.crud.update_job(db, username, jobid, jobdata)
+    return udb.crud.update_job(db, jobid, jobdata)
     

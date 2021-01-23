@@ -15,3 +15,9 @@ host=xxx
 username=xxx
 password=xxx
 name=xxx
+
+[email]
+username=xxxx
+password=xxxx
+smtp_server=xxxx
+smtp_port=xxxx
