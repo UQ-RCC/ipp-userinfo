@@ -332,9 +332,16 @@ def delete_template(db: Session, template: models.Template):
 
 
 ############# jobs #################
-def get_jobs(db:Session, username: str):
-    return db.query(models.Job).\
+def get_jobs(db:Session, username: str, all):
+    if all:
+        return db.query(models.Job).\
             filter(models.Job.username == username).\
+            all()
+    else:
+        # return non FAILED, COMPLETED job
+        return db.query(models.Job).\
+            filter(models.Job.username == username).\
+            filter(models.Job.status.notin_(['FAILED', 'COMPLETE'])).\
             all()
 
 def get_job(db:Session, jobid: str):

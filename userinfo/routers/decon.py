@@ -172,10 +172,11 @@ def delete_template(templateid: int,
 
 ######## job
 @router.get("/jobs", response_model=List[udb.schemas.Job])
-def get_jobs(user: dict = Depends(keycloak.decode), 
+def get_jobs(   all: bool = False,
+                user: dict = Depends(keycloak.decode), 
                 db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')
-    return udb.crud.get_jobs(db, username)
+    return udb.crud.get_jobs(db, username, all)
 
 
 
