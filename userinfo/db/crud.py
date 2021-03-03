@@ -81,10 +81,10 @@ def create_bookmark(db: Session, filesexplorer_id: int, bookmark: schemas.Bookma
 
 
 def get_bookmark(db: Session, bookmark_id: int):
-    return db.query(models.Bookmark).filter(models.Bookmark.id == bookmark_id).one()
+    return db.query(models.Bookmark).filter(models.Bookmark.id == bookmark_id).first()
     
 def delete_bookmark(db: Session, bookmark_id: int):
-    bookmark = db.query(models.Bookmark).filter(models.Bookmark.id == bookmark_id).one()
+    bookmark = db.query(models.Bookmark).filter(models.Bookmark.id == bookmark_id).first()
     if(bookmark):
         db.delete(bookmark)
         db.commit()
@@ -107,7 +107,7 @@ def create_deconpage(db: Session, username: str):
 # a new setting will be created from series and default values
 def create_decon_to_deconpage(db:Session, username: str, series_id: int):
     # get series first
-    series = db.query(models.Series).filter(models.Series.id == series_id).one()
+    series = db.query(models.Series).filter(models.Series.id == series_id).first()
     if not series:
         raise NotfoundException('Not find the given series')
     # create a new Setting
@@ -222,14 +222,14 @@ def create_decon_and_jobs(db:Session, username: str, email: str, decon_id: int, 
     decon = db.query(models.Decon).\
                 filter(models.Decon.id == decon_id).\
                 filter(models.Decon.deconpage_id == username).\
-                one()
+                first()
     if not decon:
         raise NotfoundException("Cannot find the given decon under this username")
     # create a new setting, reasons: existing setting can be changed
     # no need to create a new series, as it is always there
     existing_setting = db.query(models.Setting).\
                 filter(models.Setting.id == decon.setting_id).\
-                one()
+                first()
     existing_setting_dict = row2dict(existing_setting)
     # print(existing_setting_dict)
     # print (object_as_dict(existing_setting))
@@ -260,7 +260,7 @@ def get_all_series(db: Session):
     return db.query(models.Series).all()
 
 def get_one_series(db: Session, serie_id: int):
-    return db.query(models.Series).filter(models.Series.id == serie_id).one()
+    return db.query(models.Series).filter(models.Series.id == serie_id).first()
 
 def get_one_series_by_path(db: Session, path: str):
     return db.query(models.Series).filter(models.Series.path == path).all()
@@ -282,7 +282,7 @@ def get_all_settings(db: Session):
     return db.query(models.Setting).all()
 
 def get_one_setting(db: Session, setting_id: int):
-    return db.query(models.Setting).filter(models.Setting.id == setting_id).one()
+    return db.query(models.Setting).filter(models.Setting.id == setting_id).first()
 
 def update_setting(db: Session, username: str, setting_id: int, setting: schemas.SettingCreate):
     existing_setting = get_one_setting(db, setting_id)
@@ -320,13 +320,13 @@ def get_template(db: Session, username: str, templateid: int):
     return db.query(models.Template).\
             filter(models.Template.username == username).\
             filter(models.Template.id == templateid).\
-            one()
+            first()
 
 def delete_template(db: Session, template: models.Template):
     template = db.query(models.Template).\
                 filter(models.Template.username == username).\
                 filter(models.Template.id == templateid).\
-                one()
+                first()
     db.delete(template)
     db.commit()
 
@@ -347,7 +347,7 @@ def get_jobs(db:Session, username: str, all):
 def get_job(db:Session, jobid: str):
     return db.query(models.Job).\
             filter(models.Job.id == jobid).\
-            one()
+            first()
 
 def create_email_contents(finished_jobs, series, setting):
     """
@@ -436,9 +436,9 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                 all()
             if len(total_jobs) == len(finished_jobs):
                 # get settings and series
-                decon = db.query(models.Decon).filter(models.Decon.id == decon_id).one()
-                series = db.query(models.Series).filter(models.Series.id == decon.series_id).one()
-                setting = db.query(models.Setting).filter(models.Setting.id == decon.setting_id).one()
+                decon = db.query(models.Decon).filter(models.Decon.id == decon_id).first()
+                series = db.query(models.Series).filter(models.Series.id == decon.series_id).first()
+                setting = db.query(models.Setting).filter(models.Setting.id == decon.setting_id).first()
                 # send email
                 if series.isfolder:
                     subject = 'Your series have been processed!'
@@ -451,10 +451,10 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
 def delete_job(db:Session, username: str, jobid: str):
     job = db.query(models.Job).\
         filter(models.Job.username == username).\
-        filter(models.Job.id == jobid).one()
+        filter(models.Job.id == jobid).first()
     # get decon with job
     decon = db.query(models.Decon).\
-        filter(models.Decon.id == job.decon_id).one()
+        filter(models.Decon.id == job.decon_id).first()
     db.delete(job)
     db.delete(decon)
     db.commit()
