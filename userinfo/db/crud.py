@@ -8,6 +8,9 @@ import shortuuid, enum, datetime
 
 import userinfo.mail as mail
 
+import logging
+logger = logging.getLogger('ippuserinfo')
+
 class PermissionException(Exception):
     pass
 
@@ -158,15 +161,15 @@ def get_decons(db: Session, username: str, path: str):
     decons = []
     if path:
         decoded_path = base64.b64decode(path).decode("utf-8")
-        print ("===============")
-        print (f"decoded path: {decoded_path}") 
+        # print ("===============")
+        # print (f"decoded path: {decoded_path}") 
         # a simple join
         for d, s in db.query(models.Decon, models.Series).\
                     filter(models.Decon.series_id == models.Series.id).\
                     filter(models.Decon.deconpage_id == username).\
                     filter(models.Series.path == decoded_path).all():
             decons.append(d)
-        print (len(decons))
+        # print (len(decons))
     else:
         decons = db_deconpage.decons
     return decons
@@ -271,10 +274,10 @@ def create_series(db: Session, series: schemas.SeriesCreate):
         raise AlreadyExistException('Series with given path already exists')
     db_serie = models.Series(**series.dict())
     db.add(db_serie)
-    print ("adding series")
+    # print ("adding series")
     db.commit()
     db.refresh(db_serie)
-    print (db_serie)
+    # print (db_serie)
     return db_serie
 
 ## settings
@@ -434,11 +437,13 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                 filter(models.Job.decon_id == decon_id).\
                 filter(models.Job.status.in_(['FAILED', 'COMPLETE'])).\
                 all()
+            logger.debug("Total jobs = %d, finished jobs = %d" %(len(total_jobs), len(finished_jobs)))
             if len(total_jobs) == len(finished_jobs):
                 # get settings and series
                 decon = db.query(models.Decon).filter(models.Decon.id == decon_id).first()
                 series = db.query(models.Series).filter(models.Series.id == decon.series_id).first()
                 setting = db.query(models.Setting).filter(models.Setting.id == decon.setting_id).first()
+                logger.debug("Sending user email to %s" %(existing_job_dict.get('email')))
                 # send email
                 if series.isfolder:
                     subject = 'Your series have been processed!'

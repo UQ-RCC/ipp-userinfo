@@ -7,10 +7,22 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import user, job, fileexplorer, decon, version
+import userinfo.config as config
+from logging.handlers import TimedRotatingFileHandler
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s [%(name)s] %(levelname)s : %(message)s')
-logger = logging.getLogger(__name__)
+
+logger = logging.getLogger('ippuserinfo')
+logger.setLevel(logging.DEBUG)
+
+log_file = config.get('logging', 'log_file', default = "/var/log/ippuserinfo-rs.log")
+fh = TimedRotatingFileHandler(log_file, when='midnight',backupCount=7)
+fh.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+logging.getLogger("uvicorn.access").addHandler(fh)
+# logging.getLogger("uvicorn.error").addHandler(fh)
+logging.getLogger("uvicorn").addHandler(fh)
 
 
 userinfoapi = FastAPI()
