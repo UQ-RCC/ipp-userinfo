@@ -29,6 +29,4 @@ def update_job(    jobid: str,
     except Exception as e:
         logger.debug("Problem updating job") 
         logger.debug(e)
-        return HTTPException(status_code=500, detail="Problem updating job"
-
-    
+        return HTTPException(status_code=500, detail="Problem updating job")
