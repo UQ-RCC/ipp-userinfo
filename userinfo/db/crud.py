@@ -20,6 +20,8 @@ class NotfoundException(Exception):
 class AlreadyExistException(Exception):
     pass
 
+class CannotChangeException(Exception):
+    pass
 
 
 ############# file explorer #################
@@ -420,7 +422,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     # if existing_job is failed, complete then return
     if stored_item_model.status in ('FAILED', 'COMPLETE'):
         logger.debug("Job status cannot be changed once in FAILED or COMPLETE")
-        raise Exception('Cannot changed terminated job')        
+        raise CannotChangeException('Cannot changed terminated job')        
     update_data = job.dict(exclude_unset=True)
     if update_data.get('status') in ('FAILED', 'COMPLETE'):
         update_data['end'] = datetime.datetime.utcnow()

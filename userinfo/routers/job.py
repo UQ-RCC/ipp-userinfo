@@ -24,6 +24,11 @@ def update_job(    jobid: str,
     logger.debug("Updating job %s, new status: %s" %(jobid, jobdata.status))
     try:
         return udb.crud.update_job(db, jobid, jobdata)
-    except Exception as e: 
-        return HTTPException(status_code=304, detail="Unchanged:" + e)
+    except udb.crud.CannotChangeException: 
+        return HTTPException(status_code=304, detail="Unchanged. job state is either in FAIL or COMPLETE")    
+    except Exception as e:
+        logger.debug("Problem updating job") 
+        logger.debug(e)
+        return HTTPException(status_code=500, detail="Problem updating job"
+
     
