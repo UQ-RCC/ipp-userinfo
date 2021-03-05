@@ -56,7 +56,7 @@ def update_filexplorer_pref(component: str, prefid: int, pref: udb.schemas.Files
     if not fileexplorer_pref:
         return HTTPException(status_code=400, detail="Invalid prefid")
     if fileexplorer_pref.username != username:
-         return HTTPException(status_code=401, detail="Cannot edit others pref")
+        return HTTPException(status_code=401, detail="Cannot edit others pref")
     return udb.crud.update_filesexplorer(db, prefid, pref)
 
 

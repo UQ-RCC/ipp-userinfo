@@ -417,6 +417,10 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     existing_job = get_job(db, jobid)
     existing_job_dict = row2dict(existing_job)
     stored_item_model = schemas.JobCreate(**existing_job_dict)
+    # if existing_job is failed, complete then return
+    if stored_item_model.status in ('FAILED', 'COMPLETE'):
+        logger.debug("Job status cannot be changed once in FAILED or COMPLETE")
+        raise Exception('Cannot changed terminated job')        
     update_data = job.dict(exclude_unset=True)
     if update_data.get('status') in ('FAILED', 'COMPLETE'):
         update_data['end'] = datetime.datetime.utcnow()
@@ -427,6 +431,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     db.commit()
     # check if the job stat is FAIL or COMPLETE
     if 'status' in update_data.keys():
+        logger.debug(f"Updating job with status: {update_data.get('status')}")
         new_job_stat = update_data.get('status')
         # get decon_id from existing job
         decon_id = existing_job_dict.get('decon_id')
@@ -437,13 +442,13 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                 filter(models.Job.decon_id == decon_id).\
                 filter(models.Job.status.in_(['FAILED', 'COMPLETE'])).\
                 all()
-            logger.debug("Total jobs = %d, finished jobs = %d" %(len(total_jobs), len(finished_jobs)))
+            logger.debug(f"Total jobs = {len(total_jobs)}, finished jobs = {len(finished_jobs)}")
             if len(total_jobs) == len(finished_jobs):
                 # get settings and series
                 decon = db.query(models.Decon).filter(models.Decon.id == decon_id).first()
                 series = db.query(models.Series).filter(models.Series.id == decon.series_id).first()
                 setting = db.query(models.Setting).filter(models.Setting.id == decon.setting_id).first()
-                logger.debug("Sending user email to %s" %(existing_job_dict.get('email')))
+                logger.debug(f"Sending user email to {existing_job_dict.get('email')}")
                 # send email
                 if series.isfolder:
                     subject = 'Your series have been processed!'

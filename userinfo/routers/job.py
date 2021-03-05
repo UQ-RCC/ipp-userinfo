@@ -22,5 +22,8 @@ def update_job(    jobid: str,
                 jobdata: udb.schemas.JobCreate,
                 db: Session = Depends(udb.get_db)):
     logger.debug("Updating job %s, new status: %s" %(jobid, jobdata.status))
-    return udb.crud.update_job(db, jobid, jobdata)
+    try:
+        return udb.crud.update_job(db, jobid, jobdata)
+    except Exception as e: 
+        return HTTPException(status_code=304, detail="Unchanged:" + e)
     
