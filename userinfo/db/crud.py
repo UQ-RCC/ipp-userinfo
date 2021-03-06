@@ -430,6 +430,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     db.query(models.Job).\
         filter(models.Job.id == jobid).\
         update(updated_item.dict())
+    db.flush()
     db.commit()
     # check if the job stat is FAIL or COMPLETE
     if 'status' in update_data.keys():
@@ -445,6 +446,8 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                 filter(models.Job.status.in_(['FAILED', 'COMPLETE'])).\
                 all()
             logger.debug(f"Total jobs = {len(total_jobs)}, finished jobs = {len(finished_jobs)}")
+            logger.debug(total_jobs)
+            logger.debug(finished_jobs)
             if len(total_jobs) == len(finished_jobs):
                 # get settings and series
                 decon = db.query(models.Decon).filter(models.Decon.id == decon_id).first()
