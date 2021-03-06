@@ -2,14 +2,13 @@ import smtplib, ssl
 from email.message import EmailMessage
 from smtplib import SMTP
 import userinfo.config as config
-import logging
+import logging, time
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s [%(name)s] %(levelname)s : %(message)s')
 logger = logging.getLogger(__name__)
 
-# create connection
-try:
+def connect_smtp():
     connection = smtplib.SMTP(  config.get('email', 'smtp_server'), 
                                 config.get('email', 'smtp_port')
                             )
@@ -22,27 +21,40 @@ try:
     else:
         connection.starttls()
     connection.ehlo()
-    connection.login(config.get('email', 'username'), 
-                    config.get('email', 'password'))
-except Exception as e:
-    logger.error("Problem with creat smtp connection: " + str(e))
-    exit(1)
-
-
-def close_connection():
-    connection.close()
+    connection.login(config.get('email', 'username'), config.get('email', 'password'))
+    return connection
 
 def send_mail(to_address, subject, contents, subtype='html'):
     """
     Send email
     """
-    email = EmailMessage()
-    email['Subject'] = subject
-    email['From'] = config.get('email', 'username')
-    email['To'] = to_address
-    email.set_content(contents, subtype=subtype)
-    connection.send_message(email)
-
+    ### create connectoin first
+    ### try 3 times
+    connected = False
+    attempts = 0
+    while not connected:
+        attempts = attempts + 1
+        try:
+            connection = connect_smtp()
+            connected = True
+        except Exception as e:
+            logger.error(f"Problem with create smtp connection: {str(e)}")
+            if attempts < 3:
+                logger.debug("Try connecting to smtp server again...")
+                time.sleep(3)
+            else:
+                raise
+    ### send the email
+    try:
+        email = EmailMessage()
+        email['Subject'] = subject
+        email['From'] = config.get('email', 'username')
+        email['To'] = to_address
+        email.set_content(contents, subtype=subtype)
+        connection.send_message(email)
+    finally:
+        # close connection
+        connection.close()
 
 def main(argv):
     """

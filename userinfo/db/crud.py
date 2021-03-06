@@ -457,7 +457,11 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                 else:
                     subject = 'Your files have been processed!'
                 contents = create_email_contents(finished_jobs, series, setting)
-                mail.send_mail(existing_job_dict.get('email'), subject, contents)
+                try:
+                    mail.send_mail(existing_job_dict.get('email'), subject, contents)
+                except Exception as e:
+                    logger.error(f"Problem sending email: {str(e)}")
+                    raise
 
 
 def delete_job(db:Session, username: str, jobid: str):
