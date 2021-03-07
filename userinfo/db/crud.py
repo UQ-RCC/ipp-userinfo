@@ -472,10 +472,10 @@ def delete_job(db:Session, username: str, jobid: str):
         filter(models.Job.username == username).\
         filter(models.Job.id == jobid).first()
     # get decon with job
-    decon = db.query(models.Decon).\
-        filter(models.Decon.id == job.decon_id).first()
+    # decon = db.query(models.Decon).\
+    #     filter(models.Decon.id == job.decon_id).first()
     db.delete(job)
-    db.delete(decon)
+    # db.delete(decon)
     db.commit()
 
 
