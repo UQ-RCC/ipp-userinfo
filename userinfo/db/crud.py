@@ -50,7 +50,8 @@ def create_filesexplorer(db: Session, filesxplorer: schemas.FilesExplorerBase):
                                         )
     db.add(filesexplorer)
     db.commit()
-    db.refresh(filesexplorer)
+    db.flush()
+    # db.refresh(filesexplorer)
     return filesexplorer
 
 def update_filesexplorer(db: Session, filesxplorer_id: int, filesxplorer: schemas.FilesExplorerUpdate):
@@ -69,7 +70,8 @@ def update_filesexplorer(db: Session, filesxplorer_id: int, filesxplorer: schema
         if len(db_fileexplorer.lastpaths) > 10:
             db_fileexplorer.lastpaths.pop()
     db.commit()
-    db.refresh(db_fileexplorer)
+    db.flush()
+    # db.refresh(db_fileexplorer)
     return db_fileexplorer
 
 
@@ -81,7 +83,8 @@ def create_bookmark(db: Session, filesexplorer_id: int, bookmark: schemas.Bookma
     db_bookmark = models.Bookmark(**bookmark.dict(), filesexplorer_id=filesexplorer_id)
     db.add(db_bookmark)
     db.commit()
-    db.refresh(db_bookmark)
+    db.flush()
+    # db.refresh(db_bookmark)
     return db_bookmark
 
 
@@ -125,7 +128,8 @@ def create_decon_to_deconpage(db:Session, username: str, series_id: int):
                             deconpage_id=username)
     db.add(new_decon)
     db.commit()
-    db.refresh(new_decon)
+    db.flush()
+    # db.refresh(new_decon)
     return new_decon
     
 def create_decon_to_deconpage(db:Session, username: str, series_id: int, setting: schemas.SettingCreate):
@@ -138,7 +142,8 @@ def create_decon_to_deconpage(db:Session, username: str, series_id: int, setting
                             deconpage_id=username)
     db.add(new_decon)
     db.commit()
-    db.refresh(new_decon)
+    db.flush()
+    # db.refresh(new_decon)
     return new_decon
 
 def delete_decon(db: Session, decon: models.Decon):
@@ -255,7 +260,7 @@ def create_decon_and_jobs(db:Session, username: str, email: str, decon_id: int, 
                             email=email, decon_id = db_decon.id)
         db.add(db_job)
         db.flush()
-        db.refresh(db_job)
+        # db.refresh(db_job)
         created_jobs.append(db_job)
     db.commit()
     return created_jobs
@@ -278,7 +283,8 @@ def create_series(db: Session, series: schemas.SeriesCreate):
     db.add(db_serie)
     # print ("adding series")
     db.commit()
-    db.refresh(db_serie)
+    db.flush()
+    # db.refresh(db_serie)
     # print (db_serie)
     return db_serie
 
@@ -317,7 +323,8 @@ def create_template(db: Session, username: str, setting: schemas.SettingCreate, 
                                     setting_id=db_setting.id)
     db.add(db_template)
     db.commit()
-    db.refresh(db_template)
+    db.flush()
+    # db.refresh(db_template)
     return db_template
 
 
