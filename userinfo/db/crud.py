@@ -502,3 +502,31 @@ def delete_jobs(db:Session, username: str, jobs: List[str]):
     db.query(models.Decon).\
         filter(models.Decon.id.in_(decon_ids)).delete(synchronize_session=False)
     db.commit()
+
+
+#### convert page
+def get_convertpage(db: Session, username: str):
+    return db.query(models.ConvertPage).\
+            filter(models.ConvertPage.username == username).\
+            first()
+
+
+def create_convertpage(db: Session, username: str):
+    convertpage = models.ConvertPage(username = username)
+    db.add(convertpage)
+    db.commit()
+    db.flush()
+    return convertpage
+    
+def update_convertpage(db: Session, username: str, convertpage: schemas.ConvertPage):
+    db_convertpage = get_convertpage(db, username)
+    # update
+    db_convertpage.outputPath = convertpage.outputPath
+    db_convertpage.prefix = convertpage.prefix
+    db_convertpage.method = convertpage.method
+    db_convertpage.inputPaths = convertpage.inputPaths
+    db.commit()
+    db.flush()
+    # db.refresh(db_convertpage)
+    return db_convertpage
+    

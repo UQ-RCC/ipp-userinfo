@@ -241,3 +241,18 @@ class Series(SeriesBase):
         orm_mode = True
 
 
+#################################
+### Converting
+#################################
+class ConvertPage(BaseModel):
+    username: str
+    outputPath: Optional[str] = None
+    prefix: Optional[str] = ''
+    method: Optional[str] = 'bigload'
+    # input
+    inputPaths: List[str] = []
+    ## job
+    jobs: List[Job] = []
+
+    class Config:
+        orm_mode = True

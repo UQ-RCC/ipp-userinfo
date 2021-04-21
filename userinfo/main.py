@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import user, job, fileexplorer, decon, version
+from .routers import user, job, fileexplorer, decon, version, converter
 import userinfo.config as config
 from logging.handlers import TimedRotatingFileHandler
 
@@ -73,5 +73,13 @@ userinfoapi.include_router(
     tags=["version"], 
     responses={404: {"description": "Not found"}},
 )
+
+# convert page
+userinfoapi.include_router(
+    converter.router, 
+    tags=["convert"], 
+    responses={404: {"description": "Not found"}},
+)
+
 
 logger.info("Start ippuserinfo")

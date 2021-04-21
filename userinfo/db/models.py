@@ -64,7 +64,9 @@ class Series(Base):
     # decon
     decons = relationship("Decon", back_populates="series")
     # decon = relationship("Decon", uselist=False, back_populates="series")
-
+    # preprocessing
+    preprocessings = relationship("Preprocessing", back_populates="series")
+    
     
 
 
@@ -143,7 +145,7 @@ class SplitChannelType(enum.Enum):
     SplitTimepoints = 2
     SplitChannelsAndTimepoints = 3
 
- 
+
 class Setting(Base):
     '''
     This table is in fact a series values - nothing more
@@ -275,6 +277,69 @@ class DeconPage(Base):
 def generate_uuid():
     return shortuuid.uuid()
 
+    
+##### preprocessing ###############################
+class PSetting(Base):
+    __tablename__ = 'psetting'
+    id = Column(Integer, primary_key=True, index=True)
+    outputPath = Column(String, primary_key=False, unique=False, index=False, nullable=True)
+    ### deskew
+    deskew = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
+    keepDeskew = Column(Boolean, primary_key=False, index=False, nullable=True)
+    background = Column(Float, primary_key=False, index=False, nullable=True)    
+    stddev = Column(Float, primary_key=False, index=False, nullable=True)    
+    unit = Column(Enum(Unit), unique=False, index=False, nullable=True)
+    pixelWidth = Column(Float, primary_key=False, index=False, nullable=True) 
+    pixelHeight = Column(Float, primary_key=False, index=False, nullable=True) 
+    pixelDepth = Column(Float, primary_key=False, index=False, nullable=True)
+    angle = Column(Float, primary_key=False, index=False, nullable=True)
+    threshold = Column(Float, primary_key=False, index=False, nullable=True)    
+    ### 
+    centerAndAverage = Column(Boolean, primary_key=False, index=False, nullable=False, default=False)
+    combine = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
+    
+    preprocessing = relationship("Preprocessing", uselist=False, back_populates="psetting")
+
+class Preprocessing(Base):
+    __tablename__ = 'preprocessing'
+    id = Column(Integer, primary_key=True, index=True)
+    # setting
+    psetting_id = Column(Integer, ForeignKey('psetting.id'))
+    psetting = relationship("PSetting", back_populates="preprocessing")
+    # series
+    series_id = Column(Integer, ForeignKey('series.id'))
+    series = relationship("Series", back_populates="preprocessings")
+    ## job
+    job = relationship("Job", uselist=False, back_populates="preprocessing")
+    ## preprocessingpage
+    preprocessingpage = relationship("PreprocessingPage", uselist=False, back_populates="preprocessing")
+
+class PreprocessingPage(Base):
+    __tablename__ = 'preprocessingpage'
+    username = Column(String, primary_key=True, index=True)
+    preprocessing_id = Column(Integer, ForeignKey('preprocessing.id'))
+    preprocessing = relationship("Preprocessing", back_populates="preprocessingpage")
+
+
+
+##### converter ###############################
+class ConvertPage(Base):
+    __tablename__ = 'convertpage'
+    username = Column(String, primary_key=True, index=True)
+    ## setting
+    outputPath = Column(String, primary_key=False, unique=False, index=False, nullable=True)
+    prefix = Column(String, primary_key=False, unique=False, index=False, nullable=True, default='')
+    # [{'label': 'Bigload', 'value': 'bigload'},
+    #            {'label': 'Chunked', 'value': 'chunked'},
+    #            {'label': 'Hyperslab', 'value': 'hyperslab'}]
+    method = Column(String, primary_key=False, unique=False, index=False, nullable=True, default='bigload')
+    # input
+    inputPaths = Column(MutableList.as_mutable(PickleType), default=[])
+    ## job
+    jobs = relationship("Job", back_populates="convertpage")
+
+
+
 # job - decon job
 class Job(Base):
     __tablename__ = 'job'
@@ -300,5 +365,10 @@ class Job(Base):
     # many job corresponds to one decon
     decon_id = Column(Integer, ForeignKey("decon.id"), nullable=True)
     decon =  relationship("Decon", back_populates="jobs")
+    # preprocessing
+    convertpage_username = Column(String, ForeignKey("convertpage.username"), nullable=True)
+    convertpage =  relationship("ConvertPage", back_populates="jobs")
+    # converting
+    preprocessing_id = Column(Integer, ForeignKey("preprocessing.id"), nullable=True)
+    preprocessing =  relationship("Preprocessing", back_populates="job")
     
-
