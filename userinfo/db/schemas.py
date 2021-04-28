@@ -79,6 +79,8 @@ class JobBase(BaseModel):
     reqgres: Optional[int] = None
     reqmem: Optional[float] = None
     decon_id: Optional[int] = None
+    convertpage_username: Optional[str] = None
+    preprocessing_id: Optional[int] = None
 
 class JobCreate(JobBase):
     pass
@@ -254,5 +256,67 @@ class ConvertPage(BaseModel):
     ## job
     jobs: List[Job] = []
 
+    class Config:
+        orm_mode = True
+
+
+#################################
+### Preprocessing
+#################################
+
+class PreprocessingBase(BaseModel):
+    preprocessingpage_id: str
+    combine: bool = True
+    outputPath: Optional[str] = None
+
+class PreprocessingCreate(PreprocessingBase):
+    pass
+
+
+
+#################################
+### Preprocessingsetting
+#################################
+class PSettingBase(BaseModel):
+    preprocessing_id: Optional[int] = None
+    ### deskew
+    deskew: bool = True
+    keepDeskew: bool = True
+    background: Optional[float] = None   
+    stddev: Optional[float] = None
+    unit: Optional[models.Unit] = None
+    pixelWidth: Optional[float] = None
+    pixelHeight: Optional[float] = None
+    pixelDepth: Optional[float] = None
+    angle: Optional[float] = None
+    threshold: Optional[float] = None 
+    ### 
+    centerAndAverage: bool = True
+    order: int
+    
+    
+class PSettingCreate(PSettingBase):
+    pass
+
+class PSetting(PSettingBase):
+    id: int
+    class Config:
+        orm_mode = True
+
+class Preprocessing(PreprocessingBase):
+    id: int
+    job: Job = None
+    psettings: List[PSetting] = []
+    class Config:
+        orm_mode = True
+
+#################################
+### Preprocessing page
+#################################
+class PreprocessingPageBase(BaseModel):
+    username: str
+
+class PreprocessingPage(PreprocessingPageBase):
+    preprocessing: Preprocessing = None
     class Config:
         orm_mode = True

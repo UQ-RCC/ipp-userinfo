@@ -64,8 +64,8 @@ class Series(Base):
     # decon
     decons = relationship("Decon", back_populates="series")
     # decon = relationship("Decon", uselist=False, back_populates="series")
-    # preprocessing
-    preprocessings = relationship("Preprocessing", back_populates="series")
+    # psettings
+    psettings = relationship("PSetting", back_populates="series")
     
     
 
@@ -282,43 +282,51 @@ def generate_uuid():
 class PSetting(Base):
     __tablename__ = 'psetting'
     id = Column(Integer, primary_key=True, index=True)
-    outputPath = Column(String, primary_key=False, unique=False, index=False, nullable=True)
     ### deskew
     deskew = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
-    keepDeskew = Column(Boolean, primary_key=False, index=False, nullable=True)
+    keepDeskew = Column(Boolean, primary_key=False, index=False, nullable=True, default=True)
     background = Column(Float, primary_key=False, index=False, nullable=True)    
     stddev = Column(Float, primary_key=False, index=False, nullable=True)    
     unit = Column(Enum(Unit), unique=False, index=False, nullable=True)
     pixelWidth = Column(Float, primary_key=False, index=False, nullable=True) 
     pixelHeight = Column(Float, primary_key=False, index=False, nullable=True) 
     pixelDepth = Column(Float, primary_key=False, index=False, nullable=True)
-    angle = Column(Float, primary_key=False, index=False, nullable=True)
-    threshold = Column(Float, primary_key=False, index=False, nullable=True)    
+    angle = Column(Float, primary_key=False, index=False, nullable=False, default=32.8)
+    threshold = Column(Float, primary_key=False, index=False, nullable=False, default=0)    
     ### 
     centerAndAverage = Column(Boolean, primary_key=False, index=False, nullable=False, default=False)
-    combine = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
-    
-    preprocessing = relationship("Preprocessing", uselist=False, back_populates="psetting")
+    order = Column(Integer, primary_key=False, index=False, default=1)
 
+
+    # series
+    series_id = Column(Integer, ForeignKey('series.id'))
+    series = relationship("Series", back_populates="psettings")
+    
+    # preprocessing
+    preprocessing_id = Column(Integer, ForeignKey('preprocessing.id'), nullable=True)
+    preprocessing = relationship("Preprocessing", uselist=False, back_populates="psettings")
+
+# make sure to create a new Preprocessing whenever a submission is done
 class Preprocessing(Base):
     __tablename__ = 'preprocessing'
     id = Column(Integer, primary_key=True, index=True)
     # setting
-    psetting_id = Column(Integer, ForeignKey('psetting.id'))
-    psetting = relationship("PSetting", back_populates="preprocessing")
-    # series
-    series_id = Column(Integer, ForeignKey('series.id'))
-    series = relationship("Series", back_populates="preprocessings")
+    psettings = relationship("PSetting", back_populates="preprocessing")
+    
+    combine = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
+    
+    outputPath = Column(String, primary_key=False, unique=False, index=False, nullable=True)
     ## job
     job = relationship("Job", uselist=False, back_populates="preprocessing")
     ## preprocessingpage
-    preprocessingpage = relationship("PreprocessingPage", uselist=False, back_populates="preprocessing")
+    preprocessingpage_id = Column(String, ForeignKey("preprocessingpage.username"), nullable=True)
+    preprocessingpage = relationship("PreprocessingPage", back_populates="preprocessing")
+
 
 class PreprocessingPage(Base):
     __tablename__ = 'preprocessingpage'
     username = Column(String, primary_key=True, index=True)
-    preprocessing_id = Column(Integer, ForeignKey('preprocessing.id'))
-    preprocessing = relationship("Preprocessing", back_populates="preprocessingpage")
+    preprocessing = relationship("Preprocessing", uselist=False, back_populates="preprocessingpage")
 
 
 

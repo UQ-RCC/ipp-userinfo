@@ -284,7 +284,7 @@ def create_series(db: Session, series: schemas.SeriesCreate):
     # print ("adding series")
     db.commit()
     db.flush()
-    # db.refresh(db_serie)
+    db.refresh(db_serie)
     # print (db_serie)
     return db_serie
 
@@ -529,4 +529,138 @@ def update_convertpage(db: Session, username: str, convertpage: schemas.ConvertP
     db.flush()
     # db.refresh(db_convertpage)
     return db_convertpage
+
+def get_convert_job(db: Session, username: str):
+    return db.query(models.Job).\
+            filter(models.Job.convertpage_username == username).\
+            filter(models.Job.decon_id == None).\
+            filter(models.Job.preprocessing_id == None ).\
+            first()
+
+
+def create_convert_job(db: Session, username: str, email: str):
+    db_job = models.Job(id=shortuuid.uuid(), username = username, 
+                    email=email, convertpage_username = username)
+    db.add(db_job)
+    db.commit()
+    db.flush()
+    return db_job
+
+
+#### preprocess page
+def get_preprocessingpage(db: Session, username: str):
+    return db.query(models.PreprocessingPage).\
+            filter(models.PreprocessingPage.username == username).\
+            first()
+
+# also create an empty processing 
+def create_preprocessingpage(db: Session, username: str):
+    preprocessingpage = models.PreprocessingPage(username = username)
+    preprocessing = models.Preprocessing(preprocessingpage_id = username, preprocessingpage=preprocessingpage, psettings=[])
+    db.add(preprocessing)
+    db.flush()
+    preprocessingpage.preprocessing = preprocessing
+    db.add(preprocessingpage)
+    db.flush()
+    db.commit()
+    return preprocessingpage
+
+# create new processing 
+def create_new_processing(db: Session, username: str):
+    preprocessing = models.Preprocessing(preprocessingpage_id = username, preprocessingpage=preprocessingpage, psettings=[])
+    db.add(preprocessing)
+    db.flush()
+    db.commit()
+    return preprocessing
+
+
+    
+
+# get a processing
+def get_a_processing(db: Session, username: str, preprocessingid: int):
+    return db.query(models.Preprocessing).\
+            filter(models.Preprocessing.preprocessingpage_id == username).\
+            filter(models.Preprocessing.id == preprocessingid).\
+            first()
+
+def get_processing_job(db: Session, username: str, preprocessingid: int):
+    processing = get_a_processing(db, username, preprocessingid)
+    if not processing: 
+        raise NotfoundException(f"Cannot find preprocessing with id={preprocessingid}")
+    
+    job = db.query(models.Job).\
+            filter(models.Job.preprocessing_id == preprocessindid).\
+            filter(models.Job.decon_id == None).\
+            filter(models.Job.convertpage_username == None).\
+            first()
+    if not job:
+        job = models.Job(username=username, decon_id=None, convertpage_username=None, preprocessing_id=preprocessing.id)
+        db.add(job)
+        db.flush()
+        db.commit()
+    return job
+
+
+def create_new_psetting(db: Session, username: str, preprocessingid: int, seriesid: int):
+    # get series
+    serie = get_one_series(db, seriesid)
+    if not serie:
+        raise NotfoundException(f"Cannot find series with id={seriesid}")
+    # get preprocessing
+    preprocessing = get_a_processing(db, username, preprocessingid)
+    if not preprocessing:
+        raise NotfoundException(f"Cannot find preprocessing with id={preprocessingid}")
+    # create new psetting
+    # count numbe rof existing psettings
+    order = db.query(models.PSetting).filter(models.PSetting.preprocessing_id == preprocessingid).count() + 1
+    psetting = models.PSetting( series_id=seriesid, preprocessing_id=preprocessingid, 
+                                background=serie.background, stddev=serie.stddev,
+                                threshold=serie.background,
+                                unit=serie.unit, pixelWidth=serie.pixelWidth,
+                                pixelHeight=serie.pixelHeight, pixelDepth=serie.pixelDepth, 
+                                order=order)
+    db.add(psetting)
+    db.flush()
+    db.commit()
+    db.refresh(psetting)
+    psetting.series = serie
+    return psetting
+
+
+def get_psetting(db: Session, username: str, psetting_id: int):
+    _psetting = db.query(models.PSetting).filter(models.PSetting.id == psetting_id).first()
+    if _psetting:
+        _series_id = _psetting.series_id
+        _psetting.series = get_one_series(db, _series_id)
+    return _psetting
+
+def delete_psetting(db: Session, username: str, psetting_id: int):
+    psetting = db.query(models.PSetting).filter(models.PSetting.id == psetting_id).first()
+    if psetting:
+        db.delete(psetting)
+        db.commit()
+
+def update_preprocessing(db: Session, username: str, preprocessing_id: int, combine: bool, outputPath: str):
+    preprocessing = get_a_processing(db, username, preprocessingid)
+    if preprocessing == None:
+        raise NotfoundException(f"Cannot find preprocessing with id={preprocessingid}")
+    preprocessing.combine = combine
+    preprocessing.outputPath = outputPath
+    db.commit()
+    return preprocessing
+
+def update_psetting(db: Session, username: str, psetting_id: int, psetting: schemas.PSettingCreate):
+    _db_psetting = db.query(models.PSetting).filter(models.PSetting.id == psetting_id).first()
+    if not _db_psetting:
+        raise NotfoundException(f"Cannot find psetting with id={psetting_id}")
+    # update decon
+    existing_psetting_dict = row2dict(_db_psetting, True)
+    stored_psetting_model = schemas.PSetting(**existing_psetting_dict)
+    update_psetting_data = psetting.dict(exclude_unset=True)
+    updated_psetting_item = stored_psetting_model.copy(update=update_psetting_data)
+    updated_psetting_item_dict = updated_psetting_item.dict()
+    db.query(models.PSetting).filter(models.PSetting.id == psetting_id).update(updated_psetting_item_dict)
+    db.commit()
+
+
     

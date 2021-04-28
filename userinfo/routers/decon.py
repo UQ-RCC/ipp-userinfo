@@ -39,9 +39,8 @@ def update_decon(  deconid: int,
                 user: dict = Depends(keycloak.decode), 
                 db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')
-    db_decon = udb.crud.update_decon(db, username, deconid, decon, setting)
-    return db_decon
-
+    udb.crud.update_decon(db, username, deconid, decon, setting)
+    
 
 @router.get("/deconpage/decons/{deconid}", response_model=udb.schemas.Decon)
 def get_decon(  deconid: int,
@@ -90,7 +89,7 @@ def get_a_series(serieid: int, db: Session = Depends(udb.get_db)):
     """returns a specific series"""
     return udb.crud.get_one_series(db, serieid)
     
-@router.post("/series")
+@router.post("/series", response_model=udb.schemas.Series)
 def create_series(
                 series: udb.schemas.SeriesCreate,
                 user: dict = Depends(keycloak.decode),

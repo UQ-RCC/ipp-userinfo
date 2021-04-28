@@ -25,3 +25,21 @@ def get_convertpage(convertpage: udb.schemas.ConvertPage,
         return HTTPException(status_code=400, detail="Username cannot be empty")
     return udb.crud.update_convertpage(db, username, convertpage)
 
+
+######## job
+@router.post("/convertpage/job", response_model=List[udb.schemas.Job])
+def create_convert_job(user: dict = Depends(keycloak.decode), 
+                    db: Session = Depends(udb.get_db)):
+    username = user.get('preferred_username')
+    email = user.get('email')  
+    try:
+        return udb.crud.create_convert_job(db, username, email)
+    except udb.crud.NotfoundException:
+        return HTTPException(status_code=404, detail=f"Not found convert for: {username}")
+
+
+@router.get("/convertpage/job", response_model=List[udb.schemas.Job])
+def get_convert_job(user: dict = Depends(keycloak.decode), 
+                    db: Session = Depends(udb.get_db)):
+    username = user.get('preferred_username')
+    return udb.crud.get_convert_job(db, username)
