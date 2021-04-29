@@ -335,7 +335,7 @@ class ConvertPage(Base):
     __tablename__ = 'convertpage'
     username = Column(String, primary_key=True, index=True)
     ## setting
-    outputPath = Column(String, primary_key=False, unique=False, index=False, nullable=True)
+    outputPath = Column(String, primary_key=False, unique=False, index=False, nullable=True, default='')
     prefix = Column(String, primary_key=False, unique=False, index=False, nullable=True, default='')
     # [{'label': 'Bigload', 'value': 'bigload'},
     #            {'label': 'Chunked', 'value': 'chunked'},
@@ -379,4 +379,6 @@ class Job(Base):
     # converting
     preprocessing_id = Column(Integer, ForeignKey("preprocessing.id"), nullable=True)
     preprocessing =  relationship("Preprocessing", back_populates="job")
+    # send email not or
+    sendemail = Column(Boolean, primary_key=False, index=False, nullable=False, default=False)
     

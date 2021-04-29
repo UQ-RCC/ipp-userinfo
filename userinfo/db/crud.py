@@ -361,7 +361,7 @@ def get_job(db:Session, jobid: str):
             filter(models.Job.id == jobid).\
             first()
 
-def create_email_contents(finished_jobs, series, setting):
+def create_decon_email_contents(finished_jobs, series, setting):
     """
     Create html contents of the emails
     """
@@ -444,34 +444,55 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
         logger.debug(f"Updating job with status: {update_data.get('status')}")
         new_job_stat = update_data.get('status')
         # get decon_id from existing job
-        decon_id = existing_job_dict.get('decon_id')
         if new_job_stat in ('FAILED', 'COMPLETE'):
-            total_jobs = db.query(models.Job).filter(models.Job.decon_id == decon_id).all()
-            # meaning a new job is done/or failed
-            finished_jobs = db.query(models.Job).\
-                filter(models.Job.decon_id == decon_id).\
-                filter(models.Job.status.in_(['FAILED', 'COMPLETE'])).\
-                all()
-            logger.debug(f"Total jobs = {len(total_jobs)}, finished jobs = {len(finished_jobs)}")
-            logger.debug(total_jobs)
-            logger.debug(finished_jobs)
-            if len(total_jobs) == len(finished_jobs):
-                # get settings and series
-                decon = db.query(models.Decon).filter(models.Decon.id == decon_id).first()
-                series = db.query(models.Series).filter(models.Series.id == decon.series_id).first()
-                setting = db.query(models.Setting).filter(models.Setting.id == decon.setting_id).first()
-                logger.debug(f"Sending user email to {existing_job_dict.get('email')}")
-                # send email
-                if series.isfolder:
-                    subject = 'Your series have been processed!'
+            decon_id = existing_job_dict.get('decon_id')
+            preprocessing_id = existing_job_dict.get('preprocessing_id')
+            convertpage_username = existing_job_dict.get('convertpage_username')
+            sendEmail = existing_job_dict.get('sendemail')
+            email = existing_job_dict.get('email')
+            subject = contents = ''
+            ######## decon job
+            if not preprocessing_id and not convertpage_username and decon_id: 
+                total_jobs = db.query(models.Job).filter(models.Job.decon_id == decon_id).all()
+                # meaning a new job is done/or failed
+                finished_jobs = db.query(models.Job).\
+                    filter(models.Job.decon_id == decon_id).\
+                    filter(models.Job.status.in_(['FAILED', 'COMPLETE'])).\
+                    all()
+                logger.debug(f"Total jobs = {len(total_jobs)}, finished jobs = {len(finished_jobs)}")
+                logger.debug(total_jobs)
+                logger.debug(finished_jobs)
+                if len(total_jobs) == len(finished_jobs) and sendEmail:
+                    # get settings and series
+                    decon = db.query(models.Decon).filter(models.Decon.id == decon_id).first()
+                    series = db.query(models.Series).filter(models.Series.id == decon.series_id).first()
+                    setting = db.query(models.Setting).filter(models.Setting.id == decon.setting_id).first()
+                    logger.debug(f"Sending user email to {existing_job_dict.get('email')}")
+                    # send email
+                    if series.isfolder:
+                        subject = 'Your series have been processed!'
+                    else:
+                        subject = 'Your files have been processed!'
+                    contents = create_decon_email_contents(finished_jobs, series, setting)
                 else:
-                    subject = 'Your files have been processed!'
-                contents = create_email_contents(finished_jobs, series, setting)
+                    sendEmail = False
+            #### convert job
+            elif not preprocessing_id and convertpage_username and not decon_id:
+                if sendEmail:
+                    subject = 'Your conversion job has finished!'
+                    contents = create_convert_email_contents(finished_jobs, series, setting)
+            #### preprocess job
+            elif preprocessing_id and not convertpage_username and not decon_id:
+                if sendEmail:
+                    subject = 'Your preprocessing job has finished!'
+                    contents = create_preprocessing_email_contents(finished_jobs, series, setting)
+            if sendEmail:
                 try:
-                    mail.send_mail(existing_job_dict.get('email'), subject, contents)
+                    mail.send_mail(email, subject, contents)
                 except Exception as e:
                     logger.error(f"Problem sending email: {str(e)}")
                     raise
+                
 
 
 def delete_job(db:Session, username: str, jobid: str):
@@ -481,9 +502,15 @@ def delete_job(db:Session, username: str, jobid: str):
     # get decon with job
     # decon = db.query(models.Decon).\
     #     filter(models.Decon.id == job.decon_id).first()
-    db.delete(job)
-    # db.delete(decon)
-    db.commit()
+    if job:
+        logger.debug(f"Deleting job with id={jobid}")
+        db.delete(job)
+        # db.delete(decon)
+        db.commit()
+    else:
+        logger.debug(f"Job with id={jobid} does not exist")
+        
+    
 
 
 def delete_jobs(db:Session, username: str, jobs: List[str]):
@@ -538,12 +565,14 @@ def get_convert_job(db: Session, username: str):
             first()
 
 
-def create_convert_job(db: Session, username: str, email: str):
+def create_convert_job(db: Session, username: str, email: str, sendEmail: bool):
     db_job = models.Job(id=shortuuid.uuid(), username = username, 
-                    email=email, convertpage_username = username)
+                    email=email, convertpage_username = username,
+                    sendemail=sendEmail)
     db.add(db_job)
     db.commit()
     db.flush()
+    db.refresh(db_job)
     return db_job
 
 
@@ -611,8 +640,16 @@ def create_new_psetting(db: Session, username: str, preprocessingid: int, series
     if not preprocessing:
         raise NotfoundException(f"Cannot find preprocessing with id={preprocessingid}")
     # create new psetting
-    # count numbe rof existing psettings
-    order = db.query(models.PSetting).filter(models.PSetting.preprocessing_id == preprocessingid).count() + 1
+    # get max of existing psettings in the give preprocessing id and add 1
+    # since there are not many items in a preprocessing, sorting it is acceptable
+    # subquery is another way, but not needed
+    # subqry = db.query(func.max(models.PSetting.order)).filter(models.PSetting.preprocessing_id == preprocessingid)
+    # qry = db.query(models.PSetting).filter(models.PSetting.preprocessing_id == preprocessingid, models.PSetting.oder == subqry)
+    _psettingWithHigherOrder = db.query(models.PSetting).filter(models.PSetting.preprocessing_id == preprocessingid).order_by(models.PSetting.order.desc()).first()
+    if _psettingWithHigherOrder:
+        order = _psettingWithHigherOrder.order + 1
+    else:
+        order = 1
     psetting = models.PSetting( series_id=seriesid, preprocessing_id=preprocessingid, 
                                 background=serie.background, stddev=serie.stddev,
                                 threshold=serie.background,
@@ -624,6 +661,8 @@ def create_new_psetting(db: Session, username: str, preprocessingid: int, series
     db.commit()
     db.refresh(psetting)
     psetting.series = serie
+    # not sure why removing this resulting in empty series :(
+    logger.debug(f"New psetting path {psetting.series.path}")
     return psetting
 
 
@@ -640,7 +679,7 @@ def delete_psetting(db: Session, username: str, psetting_id: int):
         db.delete(psetting)
         db.commit()
 
-def update_preprocessing(db: Session, username: str, preprocessing_id: int, combine: bool, outputPath: str):
+def update_preprocessing(db: Session, username: str, preprocessingid: int, combine: bool, outputPath: str):
     preprocessing = get_a_processing(db, username, preprocessingid)
     if preprocessing == None:
         raise NotfoundException(f"Cannot find preprocessing with id={preprocessingid}")

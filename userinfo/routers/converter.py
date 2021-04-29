@@ -27,18 +27,18 @@ def get_convertpage(convertpage: udb.schemas.ConvertPage,
 
 
 ######## job
-@router.post("/convertpage/job", response_model=List[udb.schemas.Job])
-def create_convert_job(user: dict = Depends(keycloak.decode), 
+@router.post("/convertpage/job", response_model=udb.schemas.Job)
+def create_convert_job(sendemail: bool, user: dict = Depends(keycloak.decode), 
                     db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')
     email = user.get('email')  
     try:
-        return udb.crud.create_convert_job(db, username, email)
+        return udb.crud.create_convert_job(db, username, email, sendemail)
     except udb.crud.NotfoundException:
         return HTTPException(status_code=404, detail=f"Not found convert for: {username}")
 
 
-@router.get("/convertpage/job", response_model=List[udb.schemas.Job])
+@router.get("/convertpage/job", response_model=udb.schemas.Job)
 def get_convert_job(user: dict = Depends(keycloak.decode), 
                     db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')

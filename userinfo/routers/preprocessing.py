@@ -29,7 +29,7 @@ def get_preprocessing_job(preprocessingid:int, user: dict = Depends(keycloak.dec
     return udb.crud.get_processing_job(db, username, preprocessingid)
 
 # create new psettings out of the given series
-@router.post("/preprocessing/{preprocessingid}/psettings", response_model=udb.schemas.PSetting)
+@router.post("/preprocessing/{preprocessingid}/psettings")
 def create_new_psetting(preprocessingid:int, series_id: int, user: dict = Depends(keycloak.decode), db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')
     return  udb.crud.create_new_psetting(db, username, preprocessingid, series_id)
@@ -55,7 +55,7 @@ def update_psetting(psettingid: int, psetting: udb.schemas.PSettingCreate, user:
 
 
 # update existing preprocessing
-@router.put("/preprocessing/{preprocessingid}", response_model=udb.schemas.Preprocessing)
+@router.put("/preprocessing/{preprocessing_id}", response_model=udb.schemas.Preprocessing)
 def update_preprocessing(preprocessing_id: int, combine: bool, outputPath: str, user: dict = Depends(keycloak.decode), db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')
     return udb.crud.update_preprocessing(db, username, preprocessing_id, combine, outputPath)

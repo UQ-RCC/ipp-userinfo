@@ -81,6 +81,7 @@ class JobBase(BaseModel):
     decon_id: Optional[int] = None
     convertpage_username: Optional[str] = None
     preprocessing_id: Optional[int] = None
+    sendemail: bool = False
 
 class JobCreate(JobBase):
     pass
@@ -248,7 +249,7 @@ class Series(SeriesBase):
 #################################
 class ConvertPage(BaseModel):
     username: str
-    outputPath: Optional[str] = None
+    outputPath: Optional[str] = ''
     prefix: Optional[str] = ''
     method: Optional[str] = 'bigload'
     # input
