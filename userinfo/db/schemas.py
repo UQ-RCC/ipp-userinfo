@@ -79,7 +79,7 @@ class JobBase(BaseModel):
     reqgres: Optional[int] = None
     reqmem: Optional[float] = None
     decon_id: Optional[int] = None
-    convertpage_username: Optional[str] = None
+    convert_id: Optional[int] = None
     preprocessing_id: Optional[int] = None
     sendemail: bool = False
 
@@ -247,19 +247,31 @@ class Series(SeriesBase):
 #################################
 ### Converting
 #################################
-class ConvertPage(BaseModel):
-    username: str
+class ConvertBase(BaseModel):
     outputPath: Optional[str] = ''
     prefix: Optional[str] = ''
     method: Optional[str] = 'bigload'
     # input
     inputPaths: List[str] = []
+    maxsize: int = 0
+    
+
+class ConvertCreate(ConvertBase):
+    pass
+
+class Convert(ConvertBase):
+    id: int
     ## job
-    jobs: List[Job] = []
+    job: Job = None
 
     class Config:
         orm_mode = True
 
+class ConvertPage(BaseModel):
+    username: str
+    convert: Convert = None
+    class Config:
+        orm_mode = True
 
 #################################
 ### Preprocessing

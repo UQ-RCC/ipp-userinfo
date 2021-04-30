@@ -294,7 +294,7 @@ class PSetting(Base):
     angle = Column(Float, primary_key=False, index=False, nullable=False, default=32.8)
     threshold = Column(Float, primary_key=False, index=False, nullable=False, default=0)    
     ### 
-    centerAndAverage = Column(Boolean, primary_key=False, index=False, nullable=False, default=False)
+    centerAndAverage = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
     order = Column(Integer, primary_key=False, index=False, default=1)
 
 
@@ -331,9 +331,9 @@ class PreprocessingPage(Base):
 
 
 ##### converter ###############################
-class ConvertPage(Base):
-    __tablename__ = 'convertpage'
-    username = Column(String, primary_key=True, index=True)
+class Convert(Base):
+    __tablename__ = 'convert'
+    id = Column(Integer, primary_key=True, index=True)
     ## setting
     outputPath = Column(String, primary_key=False, unique=False, index=False, nullable=True, default='')
     prefix = Column(String, primary_key=False, unique=False, index=False, nullable=True, default='')
@@ -344,8 +344,18 @@ class ConvertPage(Base):
     # input
     inputPaths = Column(MutableList.as_mutable(PickleType), default=[])
     ## job
-    jobs = relationship("Job", back_populates="convertpage")
+    job = relationship("Job", uselist=False, back_populates="convert")
+    # max size of all the items selected
+    maxsize = Column(String, primary_key=False, unique=False, index=False, nullable=False, default=0)
+    ## preprocessingpage
+    convertpage_id = Column(String, ForeignKey("convertpage.username"), nullable=True)
+    convertpage = relationship("ConvertPage", back_populates="convert")
 
+class ConvertPage(Base):
+    __tablename__ = 'convertpage'
+    username = Column(String, primary_key=True, index=True)
+    convert = relationship("Convert", uselist=False, back_populates="convertpage")
+    
 
 
 # job - decon job
@@ -373,10 +383,10 @@ class Job(Base):
     # many job corresponds to one decon
     decon_id = Column(Integer, ForeignKey("decon.id"), nullable=True)
     decon =  relationship("Decon", back_populates="jobs")
+    # convert
+    convert_id = Column(Integer, ForeignKey("convert.id"), nullable=True)
+    convert =  relationship("Convert", back_populates="job")
     # preprocessing
-    convertpage_username = Column(String, ForeignKey("convertpage.username"), nullable=True)
-    convertpage =  relationship("ConvertPage", back_populates="jobs")
-    # converting
     preprocessing_id = Column(Integer, ForeignKey("preprocessing.id"), nullable=True)
     preprocessing =  relationship("Preprocessing", back_populates="job")
     # send email not or

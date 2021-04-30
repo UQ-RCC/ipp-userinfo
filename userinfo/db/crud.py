@@ -350,16 +350,19 @@ def get_jobs(db:Session, username: str, all):
             filter(models.Job.username == username).\
             all()
     else:
-        # return non FAILED, COMPLETED job
+        # return non FAILED, COMPLETED, CANCELLED job
         return db.query(models.Job).\
             filter(models.Job.username == username).\
-            filter(models.Job.status.notin_(['FAILED', 'COMPLETE'])).\
+            filter(models.Job.status.notin_(['FAILED', 'COMPLETE', 'CANCELLED'])).\
             all()
 
 def get_job(db:Session, jobid: str):
     return db.query(models.Job).\
             filter(models.Job.id == jobid).\
             first()
+
+
+
 
 def create_decon_email_contents(finished_jobs, series, setting):
     """
@@ -422,6 +425,69 @@ def create_decon_email_contents(finished_jobs, series, setting):
     contents = f"{contents} Best Regards,"
     return contents
 
+def create_convert_email_contents(existing_job_dict, convert):
+    """
+    Create html contents of the emails
+    """
+    contents = f"""
+    <html>
+        <head></head>
+        <body>
+            <p>Dear Image Processing Portal user!<br />
+            Your recent conversion job has finished. Job information:<br />
+            <ul> 
+            <li>System job id: {existing_job_dict.get('id')} </li>
+            <li>Slurm job id : {existing_job_dict.get('jobid')} </li>
+            <li>Output folder: {convert.outputPath}</li> <br />
+            
+            <p> The following files/series were processed: <br />
+            <ul>"""
+    for inputPath in convert.inputPaths:
+        contents = f"{contents}<li>{inputPath}</li>"
+    contents = f"{contents}</ul><br />"
+    contents = f"{contents} Best Regards,"
+    return contents
+
+def create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings):
+    contents = f"""
+    <html>
+        <head></head>
+        <body>
+            <p>Dear Image Processing Portal user!<br />
+            Your recent conversion job has finished. Job information:<br />
+            <ul> 
+            <li>System job id: {existing_job_dict.get('id')} </li>
+            <li>Slurm job id : {existing_job_dict.get('jobid')} </li>
+            <li>Output folder: {preprocessing.outputPath}</li> <br />
+            
+            <p> The following files/series were processed: <br />
+            """
+    for psetting in psettings:
+        psetting_dict = row2dict(psetting)
+        contents = f"""{contents} <b> {psetting_dict.get('path')} </b><br />"""
+        contents = f"""{contents}
+                    <table style="width:100%; border-collapse:collapse;">
+                    <tr>
+                        <th style="border: 1px solid black;">Parameter</th>
+                        <th style="border: 1px solid black;">value</th>
+                    </tr>
+                """
+        for param in setting_dict:
+            # not interested in id and path (already displayed)
+            if "id" in param or "path" in param:
+                continue
+            else:
+                contents = contents + f"""
+                                    <tr>
+                                        <td style="border: 1px solid black;"> {param} </td>
+                                        <td style="border: 1px solid black;"> {psetting_dict.get(param)} </td>
+                                    </tr>"""
+        contents = f"{contents}</table><p/>"
+
+    contents = f"{contents} <p/> <p/>Best Regards,"
+    return contents
+
+
 def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     existing_job = get_job(db, jobid)
     existing_job_dict = row2dict(existing_job)
@@ -447,12 +513,12 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
         if new_job_stat in ('FAILED', 'COMPLETE'):
             decon_id = existing_job_dict.get('decon_id')
             preprocessing_id = existing_job_dict.get('preprocessing_id')
-            convertpage_username = existing_job_dict.get('convertpage_username')
+            convert_id = existing_job_dict.get('convert_id')
             sendEmail = existing_job_dict.get('sendemail')
             email = existing_job_dict.get('email')
             subject = contents = ''
             ######## decon job
-            if not preprocessing_id and not convertpage_username and decon_id: 
+            if not preprocessing_id and not convert_id and decon_id: 
                 total_jobs = db.query(models.Job).filter(models.Job.decon_id == decon_id).all()
                 # meaning a new job is done/or failed
                 finished_jobs = db.query(models.Job).\
@@ -477,15 +543,22 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                 else:
                     sendEmail = False
             #### convert job
-            elif not preprocessing_id and convertpage_username and not decon_id:
+            elif not preprocessing_id and convert_id and not decon_id:
                 if sendEmail:
+                    convert = db.query(models.Convert).filter(models.Convert.id == convert_id).first()
                     subject = 'Your conversion job has finished!'
-                    contents = create_convert_email_contents(finished_jobs, series, setting)
+                    contents = create_convert_email_contents(existing_job_dict, convert)
             #### preprocess job
-            elif preprocessing_id and not convertpage_username and not decon_id:
+            elif preprocessing_id and not convert_id and not decon_id:
                 if sendEmail:
+                    preprocessing = db.query(models.Preprocessing).filter(models.Preprocessing.id == preprocessing_id).first()
+                    # get psettings
+                    psettings = db.query(models.PSetting).filter(models.PSetting.preprocessing_id == preprocessing_id).all()
+                    for psetting in psettings:
+                        _serie = db.query(models.Series).filter(models.Series.id == psetting.series_id).first()
+                        psetting.path = _serie.path
                     subject = 'Your preprocessing job has finished!'
-                    contents = create_preprocessing_email_contents(finished_jobs, series, setting)
+                    contents = create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings)
             if sendEmail:
                 try:
                     mail.send_mail(email, subject, contents)
@@ -505,7 +578,6 @@ def delete_job(db:Session, username: str, jobid: str):
     if job:
         logger.debug(f"Deleting job with id={jobid}")
         db.delete(job)
-        # db.delete(decon)
         db.commit()
     else:
         logger.debug(f"Job with id={jobid} does not exist")
@@ -541,28 +613,66 @@ def get_convertpage(db: Session, username: str):
 def create_convertpage(db: Session, username: str):
     convertpage = models.ConvertPage(username = username)
     db.add(convertpage)
+    db.flush()
+    convert = models.Convert(convertpage_id = username, convertpage=convertpage)
+    db.add(convert)
     db.commit()
     db.flush()
+    db.refresh(convertpage)
     return convertpage
+
+def create_new_convert(db: Session, username: str):
+    # first get convertpage
+    convertpage = get_convertpage(db, username)
+    # get the preprocessing
+    if convertpage.convert:
+        convertpage.convert.convertpage_id = None
+        convert = models.Convert(convertpage_id = username, convertpage=convertpage, 
+                                outputPath=convertpage.convert.outputPath, prefix=convertpage.convert.prefix,
+                                method=convertpage.convert.method,inputPaths=convertpage.convert.inputPaths,
+                                maxsize=convertpage.convert.maxsize)
+    else:
+        convert = models.Convert(convertpage_id = username, convertpage=convertpage)
+        
+    db.add(convert)
+    db.flush()
+    db.commit()
+    db.refresh(convert)
+    return convert
     
-def update_convertpage(db: Session, username: str, convertpage: schemas.ConvertPage):
-    db_convertpage = get_convertpage(db, username)
+def get_convert(db: Session, username: str, convertid: int):
+    return db.query(models.Convert).\
+            filter(models.Convert.id == convertid).\
+            first()
+
+def update_convert(db: Session, username: str, convertid:int, convert: schemas.ConvertCreate):
+    db_convert = get_convert(db, username, convertid)
     # update
-    db_convertpage.outputPath = convertpage.outputPath
-    db_convertpage.prefix = convertpage.prefix
-    db_convertpage.method = convertpage.method
-    db_convertpage.inputPaths = convertpage.inputPaths
+    db_convert.outputPath = convert.outputPath
+    db_convert.prefix = convert.prefix
+    db_convert.method = convert.method
+    db_convert.inputPaths = convert.inputPaths
+    db_convert.maxsize = convert.maxsize
     db.commit()
     db.flush()
-    # db.refresh(db_convertpage)
-    return db_convertpage
+    db.refresh(db_convert)
+    return db_convert
 
-def get_convert_job(db: Session, username: str):
-    return db.query(models.Job).\
-            filter(models.Job.convertpage_username == username).\
+def get_convert_job(db: Session, username: str, convertid:int, sendemail: bool):
+    convert = get_convert(db, username, convertid)
+    if not convert: 
+        raise NotfoundException(f"Cannot find convert with id={convertid}")
+    job = db.query(models.Job).\
+            filter(models.Job.convert_id == convertid).\
             filter(models.Job.decon_id == None).\
             filter(models.Job.preprocessing_id == None ).\
             first()
+    if not job:
+        job = models.Job(id=shortuuid.uuid(), username=username, decon_id=None, convert_id=convertid, preprocessing_id=None, sendemail=sendemail)
+        db.add(job)
+        db.flush()
+        db.commit()
+    return job
 
 
 def create_convert_job(db: Session, username: str, email: str, sendEmail: bool):
@@ -594,36 +704,43 @@ def create_preprocessingpage(db: Session, username: str):
     db.commit()
     return preprocessingpage
 
-# create new processing 
+# create new processing with same psettings as current ones 
 def create_new_processing(db: Session, username: str):
-    preprocessing = models.Preprocessing(preprocessingpage_id = username, preprocessingpage=preprocessingpage, psettings=[])
+    # first get preprocessingpage
+    preprocessingpage = get_preprocessingpage(db, username)
+    # get the preprocessing
+    psettings = []
+    if preprocessingpage.preprocessing:
+        psettings = preprocessingpage.preprocessing.psettings
+        preprocessingpage.preprocessing.preprocessingpage_id = None
+    preprocessing = models.Preprocessing(preprocessingpage_id = username, preprocessingpage=preprocessingpage, psettings=psettings)
     db.add(preprocessing)
     db.flush()
     db.commit()
+    db.refresh(preprocessing)
     return preprocessing
 
 
     
 
-# get a processing
+# get a preprocessing
 def get_a_processing(db: Session, username: str, preprocessingid: int):
     return db.query(models.Preprocessing).\
-            filter(models.Preprocessing.preprocessingpage_id == username).\
             filter(models.Preprocessing.id == preprocessingid).\
             first()
 
-def get_processing_job(db: Session, username: str, preprocessingid: int):
-    processing = get_a_processing(db, username, preprocessingid)
-    if not processing: 
+def get_processing_job(db: Session, username: str, preprocessingid: int, sendemail: bool):
+    preprocessing = get_a_processing(db, username, preprocessingid)
+    if not preprocessing: 
         raise NotfoundException(f"Cannot find preprocessing with id={preprocessingid}")
     
     job = db.query(models.Job).\
-            filter(models.Job.preprocessing_id == preprocessindid).\
+            filter(models.Job.preprocessing_id == preprocessingid).\
             filter(models.Job.decon_id == None).\
-            filter(models.Job.convertpage_username == None).\
+            filter(models.Job.convert_id == None).\
             first()
     if not job:
-        job = models.Job(username=username, decon_id=None, convertpage_username=None, preprocessing_id=preprocessing.id)
+        job = models.Job(id=shortuuid.uuid(), username=username, decon_id=None, convert_id=None, preprocessing_id=preprocessing.id, sendemail=sendemail)
         db.add(job)
         db.flush()
         db.commit()

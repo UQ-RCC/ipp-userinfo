@@ -24,9 +24,9 @@ def create_preprocessing(user: dict = Depends(keycloak.decode), db: Session = De
     return udb.crud.create_new_processing(db, username)
 
 @router.get("/preprocessing/{preprocessingid}/job", response_model=udb.schemas.Job)
-def get_preprocessing_job(preprocessingid:int, user: dict = Depends(keycloak.decode), db: Session = Depends(udb.get_db)):
+def get_preprocessing_job(preprocessingid:int, sendemail: bool, user: dict = Depends(keycloak.decode), db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')
-    return udb.crud.get_processing_job(db, username, preprocessingid)
+    return udb.crud.get_processing_job(db, username, preprocessingid, sendemail)
 
 # create new psettings out of the given series
 @router.post("/preprocessing/{preprocessingid}/psettings")
