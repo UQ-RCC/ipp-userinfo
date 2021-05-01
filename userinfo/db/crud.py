@@ -1,13 +1,13 @@
 import base64
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
-
+from urllib.parse import quote
 from . import models, schemas
 from typing import List
 import shortuuid, enum, datetime
 
 import userinfo.mail as mail
-
+import userinfo.config as config
 import logging
 logger = logging.getLogger('ippuserinfo')
 
@@ -368,6 +368,8 @@ def create_decon_email_contents(finished_jobs, series, setting):
     """
     Create html contents of the emails
     """
+    setting_dict = row2dict(setting)
+    output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(setting_dict.get(outputPath))
     contents = f"""
     <html>
         <head></head>
@@ -375,7 +377,7 @@ def create_decon_email_contents(finished_jobs, series, setting):
             <p>Dear Image Processing Portal user!<br />
 
             <p>The { 'series' if series.isfolder else 'file' } <b>{ series.path }</b> has been processed! <p/>
-            
+            <p>You can access the output at <a href="{output_access_url}">here</a></p>
             <p>The following jobs are created: <br />
             <table style="width:100%; border-collapse:collapse;">
                 <tr>
@@ -409,7 +411,6 @@ def create_decon_email_contents(finished_jobs, series, setting):
                         <th style="border: 1px solid black;">value</th>
                     </tr>
                 """
-    setting_dict = row2dict(setting)
     for param in setting_dict:
         # not interested in id
         if "id" in param:
@@ -429,6 +430,7 @@ def create_convert_email_contents(existing_job_dict, convert):
     """
     Create html contents of the emails
     """
+    output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(convert.outputPath)
     contents = f"""
     <html>
         <head></head>
@@ -438,7 +440,7 @@ def create_convert_email_contents(existing_job_dict, convert):
             <ul> 
             <li>System job id: {existing_job_dict.get('id')} </li>
             <li>Slurm job id : {existing_job_dict.get('jobid')} </li>
-            <li>Output folder: {convert.outputPath}</li> <br />
+            <li>Output folder: <a href="{output_access_url}">{convert.outputPath}</a></li> <br />
             
             <p> The following files/series were processed: <br />
             <ul>"""
@@ -449,6 +451,7 @@ def create_convert_email_contents(existing_job_dict, convert):
     return contents
 
 def create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings):
+    output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(preprocessing.outputPath)
     contents = f"""
     <html>
         <head></head>
@@ -458,7 +461,7 @@ def create_preprocessing_email_contents(existing_job_dict, preprocessing, psetti
             <ul> 
             <li>System job id: {existing_job_dict.get('id')} </li>
             <li>Slurm job id : {existing_job_dict.get('jobid')} </li>
-            <li>Output folder: {preprocessing.outputPath}</li> <br />
+            <li>Output folder: <a href="{output_access_url}">{preprocessing.outputPath}</a></li> <br />
             
             <p> The following files/series were processed: <br />
             """
