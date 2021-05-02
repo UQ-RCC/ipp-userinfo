@@ -17,7 +17,7 @@ setup(
             "fastapi==0.63.0",
             "uvicorn==0.12.2",
             "python-keycloak-client==0.2.3",
-            "cowsay==2.0.3",
+            "cowsay==3.0",
             "psycopg2-binary==2.8.6",
             "sqlalchemy==1.3.20",
             "sqlalchemy_json==0.4.0",
