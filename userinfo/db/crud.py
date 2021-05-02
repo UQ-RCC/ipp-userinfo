@@ -661,7 +661,7 @@ def update_convert(db: Session, username: str, convertid:int, convert: schemas.C
     db.refresh(db_convert)
     return db_convert
 
-def get_convert_job(db: Session, username: str, convertid:int, sendemail: bool):
+def get_convert_job(db: Session, username: str, email: str, convertid:int, sendemail: bool):
     convert = get_convert(db, username, convertid)
     if not convert: 
         raise NotfoundException(f"Cannot find convert with id={convertid}")
@@ -671,7 +671,7 @@ def get_convert_job(db: Session, username: str, convertid:int, sendemail: bool):
             filter(models.Job.preprocessing_id == None ).\
             first()
     if not job:
-        job = models.Job(id=shortuuid.uuid(), username=username, decon_id=None, convert_id=convertid, preprocessing_id=None, sendemail=sendemail)
+        job = models.Job(id=shortuuid.uuid(), username=username, email=email, decon_id=None, convert_id=convertid, preprocessing_id=None, sendemail=sendemail)
         db.add(job)
         db.flush()
         db.commit()
@@ -732,7 +732,7 @@ def get_a_processing(db: Session, username: str, preprocessingid: int):
             filter(models.Preprocessing.id == preprocessingid).\
             first()
 
-def get_processing_job(db: Session, username: str, preprocessingid: int, sendemail: bool):
+def get_processing_job(db: Session, username: str, email: str, preprocessingid: int, sendemail: bool):
     preprocessing = get_a_processing(db, username, preprocessingid)
     if not preprocessing: 
         raise NotfoundException(f"Cannot find preprocessing with id={preprocessingid}")
@@ -743,7 +743,7 @@ def get_processing_job(db: Session, username: str, preprocessingid: int, sendema
             filter(models.Job.convert_id == None).\
             first()
     if not job:
-        job = models.Job(id=shortuuid.uuid(), username=username, decon_id=None, convert_id=None, preprocessing_id=preprocessing.id, sendemail=sendemail)
+        job = models.Job(id=shortuuid.uuid(), username=username, email=email, decon_id=None, convert_id=None, preprocessing_id=preprocessing.id, sendemail=sendemail)
         db.add(job)
         db.flush()
         db.commit()

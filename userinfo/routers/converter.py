@@ -47,4 +47,5 @@ def get_convert(convertid: int, user: dict = Depends(keycloak.decode), db: Sessi
 def get_convert_job(convertid: int, sendemail: bool, user: dict = Depends(keycloak.decode), 
                     db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')
-    return udb.crud.get_convert_job(db, username, convertid, sendemail)
+    email = user.get('email')
+    return udb.crud.get_convert_job(db, username, email, convertid, sendemail)
