@@ -369,7 +369,10 @@ def create_decon_email_contents(finished_jobs, series, setting):
     Create html contents of the emails
     """
     setting_dict = row2dict(setting)
-    output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(setting_dict.get(outputPath))
+    _job_output_path = setting_dict.get(outputPath)
+    if not _job_output_path.endswith('/'):
+        _job_output_path = _job_output_path + '/'
+    output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(_job_output_path)
     contents = f"""
     <html>
         <head></head>
@@ -426,18 +429,22 @@ def create_decon_email_contents(finished_jobs, series, setting):
     contents = f"{contents} Best Regards,"
     return contents
 
-def create_convert_email_contents(existing_job_dict, convert):
+def create_convert_email_contents(existing_job_dict, convert, new_job_status):
     """
     Create html contents of the emails
     """
+    if not convert.outputPath.endswith('/'):
+        convert.outputPath = convert.outputPath + '/'
     output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(convert.outputPath)
     contents = f"""
     <html>
         <head></head>
         <body>
             <p>Dear Image Processing Portal user!<br />
-            Your recent conversion job has finished. Job information:<br />
+            Your recent conversion job has finished. <br />
+            Job information:<br />
             <ul> 
+            <li>Job status: {new_job_status} </li>
             <li>System job id: {existing_job_dict.get('id')} </li>
             <li>Slurm job id : {existing_job_dict.get('jobid')} </li>
             <li>Output folder: <a href="{output_access_url}">{convert.outputPath}</a></li> <br />
@@ -450,15 +457,19 @@ def create_convert_email_contents(existing_job_dict, convert):
     contents = f"{contents} Best Regards,"
     return contents
 
-def create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings):
+def create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings, new_job_status):
+    if not preprocessing.outputPath.endswith('/'):
+        preprocessing.outputPath = preprocessing.outputPath + '/'
     output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(preprocessing.outputPath)
     contents = f"""
     <html>
         <head></head>
         <body>
             <p>Dear Image Processing Portal user!<br />
-            Your recent conversion job has finished. Job information:<br />
-            <ul> 
+            Your recent conversion job has finished. <br />
+            Job information:<br />
+            <ul>
+            <li>Job status: {new_job_status} </li> 
             <li>System job id: {existing_job_dict.get('id')} </li>
             <li>Slurm job id : {existing_job_dict.get('jobid')} </li>
             <li>Output folder: <a href="{output_access_url}">{preprocessing.outputPath}</a></li> <br />
@@ -493,7 +504,7 @@ def create_preprocessing_email_contents(existing_job_dict, preprocessing, psetti
 
 def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     existing_job = get_job(db, jobid)
-    existing_job_dict = row2dict(existing_job)
+    existing_job_dict = row2dict(existing_job, True)
     stored_item_model = schemas.JobCreate(**existing_job_dict)
     # if existing_job is failed, complete then return
     if stored_item_model.status in ('FAILED', 'COMPLETE'):
@@ -550,7 +561,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                 if sendEmail:
                     convert = db.query(models.Convert).filter(models.Convert.id == convert_id).first()
                     subject = 'Your conversion job has finished!'
-                    contents = create_convert_email_contents(existing_job_dict, convert)
+                    contents = create_convert_email_contents(existing_job_dict, convert, new_job_stat)
             #### preprocess job
             elif preprocessing_id and not convert_id and not decon_id:
                 if sendEmail:
@@ -561,7 +572,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                         _serie = db.query(models.Series).filter(models.Series.id == psetting.series_id).first()
                         psetting.path = _serie.path
                     subject = 'Your preprocessing job has finished!'
-                    contents = create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings)
+                    contents = create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings, new_job_stat)
             if sendEmail:
                 try:
                     mail.send_mail(email, subject, contents)

@@ -60,7 +60,7 @@ def main(argv):
     """
     main method
     """
-    you = "xxxxxx"
+    you = "xxx"
     contents = """
     <html>
         <head></head>
@@ -76,6 +76,6 @@ def main(argv):
         </body>
         </html>
     """
-    send_smtp_mail(you, 'This is another test', contents)
+    send_mail(you, 'This is another test', contents)
 if __name__ == '__main__':
     main([])    
