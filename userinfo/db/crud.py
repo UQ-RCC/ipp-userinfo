@@ -458,6 +458,8 @@ def create_convert_email_contents(existing_job_dict, convert, new_job_status):
     return contents
 
 def create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings, new_job_status):
+    if not preprocessing.outputPath:
+        preprocessing.outputPath = "/"
     if not preprocessing.outputPath.endswith('/'):
         preprocessing.outputPath = preprocessing.outputPath + '/'
     output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(preprocessing.outputPath)
@@ -466,7 +468,7 @@ def create_preprocessing_email_contents(existing_job_dict, preprocessing, psetti
         <head></head>
         <body>
             <p>Dear Image Processing Portal user!<br />
-            Your recent conversion job has finished. <br />
+            Your recent preprocessing job has finished. <br />
             Job information:<br />
             <ul>
             <li>Job status: {new_job_status} </li> 
@@ -477,8 +479,7 @@ def create_preprocessing_email_contents(existing_job_dict, preprocessing, psetti
             <p> The following files/series were processed: <br />
             """
     for psetting in psettings:
-        psetting_dict = row2dict(psetting)
-        contents = f"""{contents} <b> {psetting_dict.get('path')} </b><br />"""
+        contents = f"""{contents} <b> {psetting.path} </b><br />"""
         contents = f"""{contents}
                     <table style="width:100%; border-collapse:collapse;">
                     <tr>
@@ -486,7 +487,8 @@ def create_preprocessing_email_contents(existing_job_dict, preprocessing, psetti
                         <th style="border: 1px solid black;">value</th>
                     </tr>
                 """
-        for param in setting_dict:
+        psetting_dict = row2dict(psetting)
+        for param in psetting_dict:
             # not interested in id and path (already displayed)
             if "id" in param or "path" in param:
                 continue
@@ -533,6 +535,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
             subject = contents = ''
             ######## decon job
             if not preprocessing_id and not convert_id and decon_id: 
+                logger.debug(f"decon job, deconid={decon_id}")
                 total_jobs = db.query(models.Job).filter(models.Job.decon_id == decon_id).all()
                 # meaning a new job is done/or failed
                 finished_jobs = db.query(models.Job).\
@@ -558,12 +561,14 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                     sendEmail = False
             #### convert job
             elif not preprocessing_id and convert_id and not decon_id:
+                logger.debug(f"Convert job, convertid={convert_id}")
                 if sendEmail:
                     convert = db.query(models.Convert).filter(models.Convert.id == convert_id).first()
                     subject = 'Your conversion job has finished!'
                     contents = create_convert_email_contents(existing_job_dict, convert, new_job_stat)
             #### preprocess job
             elif preprocessing_id and not convert_id and not decon_id:
+                logger.debug(f"Preprocessing job - preprocessingid={preprocessing_id}")
                 if sendEmail:
                     preprocessing = db.query(models.Preprocessing).filter(models.Preprocessing.id == preprocessing_id).first()
                     # get psettings
@@ -724,11 +729,30 @@ def create_new_processing(db: Session, username: str):
     preprocessingpage = get_preprocessingpage(db, username)
     # get the preprocessing
     psettings = []
+    outputPath = ""
+    combine = True
     if preprocessingpage.preprocessing:
         psettings = preprocessingpage.preprocessing.psettings
         preprocessingpage.preprocessing.preprocessingpage_id = None
-    preprocessing = models.Preprocessing(preprocessingpage_id = username, preprocessingpage=preprocessingpage, psettings=psettings)
+    preprocessing = models.Preprocessing(preprocessingpage_id = username, 
+                                        preprocessingpage=preprocessingpage,
+                                        outputPath=outputPath,
+                                        combine=combine)
     db.add(preprocessing)
+    db.flush()
+    newpsettings = []
+    for psetting in psettings:
+        _newpsetting = models.PSetting(deskew=psetting.deskew, keepDeskew=psetting.keepDeskew,
+                                        background=psetting.background, stddev=psetting.stddev,
+                                        unit=psetting.unit, pixelWidth=psetting.pixelWidth,
+                                        pixelHeight=psetting.pixelHeight, pixelDepth=psetting.pixelDepth, 
+                                        angle=psetting.angle, threshold=psetting.threshold,
+                                        centerAndAverage=psetting.centerAndAverage, order=psetting.order,
+                                        series_id=psetting.series_id, preprocessing_id=preprocessing.id)
+        db.add(_newpsetting)
+        db.flush()
+        newpsettings.append(_newpsetting)
+    preprocessing.psettings = newpsettings
     db.flush()
     db.commit()
     db.refresh(preprocessing)
