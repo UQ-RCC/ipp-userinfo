@@ -383,11 +383,12 @@ def create_decon_email_contents(finished_jobs, series, setting):
 
             <p>The { 'series' if series.isfolder else 'file' } <b>{ series.path }</b> has been processed! <p/>
             <p>You can access the output at <a href="{output_access_url}">here</a></p>
-            <p>The following jobs are created: <br />
+            <p>The following jobs were created: <br />
             <table style="width:100%; border-collapse:collapse;">
                 <tr>
-                    <th style="border: 1px solid black;">Job ID</th>
-                    <th style="border: 1px solid black;">Job name</th>
+                    <th style="border: 1px solid black;">Job#</th>
+                    <th style="border: 1px solid black;">Slurm Job#</th>
+                    <th style="border: 1px solid black;">Name</th>
                     <th style="border: 1px solid black;">Start</th> 
                     <th style="border: 1px solid black;">Finish</th>
                     <th style="border: 1px solid black;">Total files</th>
@@ -398,6 +399,7 @@ def create_decon_email_contents(finished_jobs, series, setting):
     for job in finished_jobs:
         contents = contents + f"""
                                 <tr>
+                                    <td style="border: 1px solid black;"> {job.id} </td>
                                     <td style="border: 1px solid black;"> {job.jobid} </td>
                                     <td style="border: 1px solid black;"> {job.jobname} </td>
                                     <td style="border: 1px solid black;"> {job.start} </td>
