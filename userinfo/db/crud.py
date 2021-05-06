@@ -369,7 +369,9 @@ def create_decon_email_contents(finished_jobs, series, setting):
     Create html contents of the emails
     """
     setting_dict = row2dict(setting)
-    _job_output_path = setting_dict.get(outputPath)
+    _job_output_path = setting.outputPath
+    if not _job_output_path:
+        _job_output_path = "/"
     if not _job_output_path.endswith('/'):
         _job_output_path = _job_output_path + '/'
     output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(_job_output_path)
@@ -433,6 +435,8 @@ def create_convert_email_contents(existing_job_dict, convert, new_job_status):
     """
     Create html contents of the emails
     """
+    if not convert.outputPath:
+        convert.outputPath = "/"
     if not convert.outputPath.endswith('/'):
         convert.outputPath = convert.outputPath + '/'
     output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(convert.outputPath)
@@ -543,8 +547,8 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                     filter(models.Job.status.in_(['FAILED', 'COMPLETE'])).\
                     all()
                 logger.debug(f"Total jobs = {len(total_jobs)}, finished jobs = {len(finished_jobs)}")
-                logger.debug(total_jobs)
-                logger.debug(finished_jobs)
+                # logger.debug(total_jobs)
+                # logger.debug(finished_jobs)
                 if len(total_jobs) == len(finished_jobs) and sendEmail:
                     # get settings and series
                     decon = db.query(models.Decon).filter(models.Decon.id == decon_id).first()
@@ -552,10 +556,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                     setting = db.query(models.Setting).filter(models.Setting.id == decon.setting_id).first()
                     logger.debug(f"Sending user email to {existing_job_dict.get('email')}")
                     # send email
-                    if series.isfolder:
-                        subject = 'Your series have been processed!'
-                    else:
-                        subject = 'Your files have been processed!'
+                    subject = 'Your decon jobs have finished!'
                     contents = create_decon_email_contents(finished_jobs, series, setting)
                 else:
                     sendEmail = False

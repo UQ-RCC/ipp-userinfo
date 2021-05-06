@@ -390,5 +390,5 @@ class Job(Base):
     preprocessing_id = Column(Integer, ForeignKey("preprocessing.id"), nullable=True)
     preprocessing =  relationship("Preprocessing", back_populates="job")
     # send email not or
-    sendemail = Column(Boolean, primary_key=False, index=False, nullable=False, default=False)
+    sendemail = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
     

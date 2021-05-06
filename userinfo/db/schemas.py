@@ -81,7 +81,7 @@ class JobBase(BaseModel):
     decon_id: Optional[int] = None
     convert_id: Optional[int] = None
     preprocessing_id: Optional[int] = None
-    sendemail: bool = False
+    sendemail: bool = True
 
 class JobCreate(JobBase):
     pass
