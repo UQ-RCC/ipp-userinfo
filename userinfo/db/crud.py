@@ -281,11 +281,9 @@ def create_series(db: Session, series: schemas.SeriesCreate):
         raise AlreadyExistException('Series with given path already exists')
     db_serie = models.Series(**series.dict())
     db.add(db_serie)
-    # print ("adding series")
     db.commit()
     db.flush()
     db.refresh(db_serie)
-    # print (db_serie)
     return db_serie
 
 ## settings

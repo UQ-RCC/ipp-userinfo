@@ -36,6 +36,7 @@ class Unit(enum.Enum):
     µm = 'µm'
     mm = 'mm'
     inch = 'inch'
+    pixel = 'pixel'
 
 ###############################################################################
 # Series values - raw values
