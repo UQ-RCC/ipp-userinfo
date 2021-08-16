@@ -21,3 +21,5 @@ username=xxxx
 password=xxxx
 smtp_server=xxxx
 smtp_port=xxxx
+# comma separated
+admins=xxxx

@@ -31,8 +31,7 @@ async def send_feedback(title: str = Form(...), contents: str = Form(...), uploa
     if not username:
         return HTTPException(status_code=400, detail="Username cannot be empty")
     try:
-        # emails = config.get('email', 'admins', default = "microscopes@imb.uq.edu.au").strip()
-        to_emails = config.get('email', 'admins', default = "uqhngu36@uq.edu.au").strip()
+        to_emails = config.get('email', 'admins', default = "microscopes@imb.uq.edu.au").strip()
         useremail = user.get('email')
         if not useremail:
             return HTTPException(status_code=500, detail="User email cannot be empty")
