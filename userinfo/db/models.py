@@ -295,7 +295,7 @@ class PSetting(Base):
     angle = Column(Float, primary_key=False, index=False, nullable=False, default=32.8)
     threshold = Column(Float, primary_key=False, index=False, nullable=False, default=0)    
     ### 
-    centerAndAverage = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
+    centerAndAverage = Column(Boolean, primary_key=False, index=False, nullable=False, default=False)
     order = Column(Integer, primary_key=False, index=False, default=1)
 
 

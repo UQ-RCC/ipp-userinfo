@@ -304,7 +304,7 @@ class PSettingBase(BaseModel):
     angle: Optional[float] = None
     threshold: Optional[float] = None 
     ### 
-    centerAndAverage: bool = True
+    centerAndAverage: bool = False
     order: int
     
     
