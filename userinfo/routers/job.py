@@ -3,11 +3,27 @@ import userinfo.db as udb
 import userinfo.keycloak as keycloak
 from typing import List, Optional
 from sqlalchemy.orm import Session
+import datetime
 
 router = APIRouter()
 
 import logging
 logger = logging.getLogger('ippuserinfo')
+
+@router.get("/")
+def get_jobs(   status: Optional[str] = None, 
+                username: Optional[str] = None, 
+                start: Optional[datetime.date] = None,
+                jobname: Optional[str] = None,
+                user: dict = Depends(keycloak.decode), 
+                db: Session = Depends(udb.get_db)):
+    logger.debug("Querying jobs")
+    # make sure this is only available for admins
+    realm_access = user.get('realm_access')
+    if not realm_access or not 'admin' in realm_access.get('roles'):
+        return HTTPException(status_code=401, detail="Only admins can list jobs")
+    return udb.crud.filter_jobs(db, status, username, start, jobname)
+
 
 @router.get("/{jobid}", response_model=udb.schemas.Job)
 def get_job(    jobid: str,

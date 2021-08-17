@@ -1,6 +1,6 @@
 import base64
 from sqlalchemy.orm import Session
-from sqlalchemy import inspect
+from sqlalchemy import inspect, func
 from urllib.parse import quote
 from . import models, schemas
 from typing import List
@@ -353,6 +353,21 @@ def get_jobs(db:Session, username: str, all):
             filter(models.Job.username == username).\
             filter(models.Job.status.notin_(['FAILED', 'COMPLETE', 'CANCELLED'])).\
             all()
+
+def filter_jobs(db: Session, status: str, username: str, start: datetime.date, jobname: str):
+    q = db.query(models.Job)
+    if status:
+        q = q.filter(models.Job.status == status)
+    if username:
+        q = q.filter(models.Job.username == username)
+    if jobname:
+        q = q.filter(models.Job.jobname == jobname)
+    if start:
+        q = q.filter(func.date(models.Job.start) >= start)
+    return q.all()
+    
+    
+
 
 def get_job(db:Session, jobid: str):
     return db.query(models.Job).\
