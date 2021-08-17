@@ -10,7 +10,7 @@ router = APIRouter()
 import logging
 logger = logging.getLogger('ippuserinfo')
 
-@router.get("/")
+@router.get("")
 def get_jobs(   status: Optional[str] = None, 
                 username: Optional[str] = None, 
                 start: Optional[datetime.date] = None,
