@@ -68,7 +68,7 @@ class JobBase(BaseModel):
     email: str = None
     jobid: Optional[int] = None
     jobname: Optional[str] = None
-    start: datetime = datetime.datetime.now  
+    start: datetime = datetime.now
     end: Optional[datetime] = None 
     status: str = 'SUBMITTED'
     total: Optional[int] = None
