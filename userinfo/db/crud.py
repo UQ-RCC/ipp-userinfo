@@ -794,10 +794,14 @@ def get_processing_job(db: Session, username: str, email: str, preprocessingid: 
             filter(models.Job.convert_id == None).\
             first()
     if not job:
-        job = models.Job(id=shortuuid.uuid(), username=username, email=email, decon_id=None, convert_id=None, preprocessing_id=preprocessing.id, sendemail=sendemail)
+        logger.debug("Create new processing job:")
+        job = models.Job(id=shortuuid.uuid(), username=username, email=email, 
+                        decon_id=None, convert_id=None, preprocessing_id=preprocessing.id, 
+                        sendemail=sendemail)
         db.add(job)
         db.flush()
         db.commit()
+        logger.debug(job)
     return job
 
 
