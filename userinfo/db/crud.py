@@ -524,8 +524,10 @@ def create_preprocessing_email_contents(existing_job_dict, preprocessing, psetti
 
 
 def update_job(db:Session, jobid: str, job: schemas.JobCreate):
+    logger.debug(f"Updating jobid: {jobid}")
     existing_job = get_job(db, jobid)
     existing_job_dict = row2dict(existing_job, True)
+    logger.debug(existing_job_dict)
     stored_item_model = schemas.JobCreate(**existing_job_dict)
     # if existing_job is failed, complete then return
     if stored_item_model.status in ('FAILED', 'COMPLETE'):
@@ -746,10 +748,12 @@ def create_new_processing(db: Session, username: str):
     # get the preprocessing
     psettings = []
     outputPath = ""
-    combine = True
+    combine = False
     if preprocessingpage.preprocessing:
         psettings = preprocessingpage.preprocessing.psettings
         preprocessingpage.preprocessing.preprocessingpage_id = None
+        combine = preprocessingpage.preprocessing.combine
+        outputPath = preprocessingpage.preprocessing.outputPath
     preprocessing = models.Preprocessing(preprocessingpage_id = username, 
                                         preprocessingpage=preprocessingpage,
                                         outputPath=outputPath,
