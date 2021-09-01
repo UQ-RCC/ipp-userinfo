@@ -312,6 +312,7 @@ def get_templates(db:Session, username: str):
 
 def create_template(db: Session, username: str, setting: schemas.SettingCreate, templatename: str):
     # create setting
+    logger.debug(f"New settings: {setting}")
     db_setting = models.Setting(**setting.dict())
     db.add(db_setting)
     db.flush()
@@ -333,10 +334,6 @@ def get_template(db: Session, username: str, templateid: int):
             first()
 
 def delete_template(db: Session, template: models.Template):
-    template = db.query(models.Template).\
-                filter(models.Template.username == username).\
-                filter(models.Template.id == templateid).\
-                first()
     db.delete(template)
     db.commit()
 
