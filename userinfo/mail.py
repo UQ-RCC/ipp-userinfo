@@ -101,7 +101,7 @@ def send_email_with_file(from_address, to_address, ccemail, subject, contents, f
         if ccemail.strip() != '':
             logger.info(f"Cc to {ccemail}")
             email['Cc'] = ccemail
-        email.attach(MIMEText(contents, "plain"))
+        email.attach(MIMEText(contents, "html"))
         if filecontents:
             part = MIMEBase('application', "octet-stream")
             part.set_payload(filecontents)

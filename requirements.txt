@@ -7,3 +7,5 @@ sqlalchemy==1.3.20
 sqlalchemy_json==0.4.0
 shortuuid==1.0.1
 python-multipart
+python-swiftclient==3.12.0
+python-keystoneclient==4.2.0
