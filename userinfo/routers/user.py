@@ -44,7 +44,7 @@ def upload_to_github(title, contents, filename, filecontents, label):
     swift.put_container(config.get('github', 'swift_container'))
     # Upload the object
     fileParts = os.path.splitext(filename)
-    filename = f"{fileParts[0]}-{str(shortuuid.random())}.{fileParts[1]}"
+    filename = f"{fileParts[0]}-{str(shortuuid.random())}{fileParts[1]}"
     e = swift.put_object(config.get('github', 'swift_container'), filename, filecontents)
     # public url
     file_url = os.path.join(config.get('github', 'swift_public_url'),filename)
