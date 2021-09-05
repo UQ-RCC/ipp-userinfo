@@ -6,7 +6,8 @@ RUN apk add --no-cache --virtual .build-deps \
     gcc \
     python3-dev \
     musl-dev \
-    postgresql-dev 
+    postgresql-dev \
+    linux-headers
     
 COPY . .
 
