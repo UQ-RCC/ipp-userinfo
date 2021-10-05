@@ -16,6 +16,7 @@ username=xxx
 password=xxx
 name=xxx
 
+# config this to send email - maybe not needed in dev
 [email]
 username=xxxx
 password=xxxx
@@ -23,3 +24,15 @@ smtp_server=xxxx
 smtp_port=xxxx
 # comma separated
 admins=xxxx
+
+[logging]
+log_file=/var/log/ipp/ippuserinfo-rs.log
+
+
+[client]
+uri=http://localhost:8080
+
+# no need to config this in dev system
+[github]
+enabled=false
+
