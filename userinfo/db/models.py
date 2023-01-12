@@ -78,6 +78,7 @@ class PsfTypes(enum.Enum):
     Confocal = 1
     TwoPhoton = 2
     LightSheet = 3
+    SpinningDisk = 4
 
 class PsfModels(enum.Enum):
     Scalar = 0
