@@ -16,16 +16,19 @@ def connect_smtp():
     connection = smtplib.SMTP(  config.get('email', 'smtp_server'), 
                                 config.get('email', 'smtp_port')
                             )
-    if config.get('email', 'smtp_server') == 'smtp.uq.edu.au':
-        context=ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        context.set_ciphers('DEFAULT@SECLEVEL=1')
-    connection.ehlo()
-    if config.get('email', 'smtp_server') == 'smtp.uq.edu.au':
-        connection.starttls(context=context)
-    else:
-        connection.starttls()
-    connection.ehlo()
-    connection.login(config.get('email', 'username'), config.get('email', 'password'))
+    if config.get('email', 'smtp_tls', default='True').lower() == 'true':
+        if config.get('email', 'smtp_server') == 'smtp.uq.edu.au':
+            context=ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+            context.set_ciphers('DEFAULT@SECLEVEL=1')
+        connection.ehlo()
+        if config.get('email', 'smtp_server') == 'smtp.uq.edu.au':
+            connection.starttls(context=context)
+        else:
+            connection.starttls()
+    username, passwd = config.get('email', 'username'), config.get('email', 'password')
+    if username and passwd:
+        connection.ehlo()
+        connection.login(config.get('email', 'username'), config.get('email', 'password'))
     return connection
 
 
@@ -125,6 +128,9 @@ def main(argv):
     """
     main method
     """
+    print(config.get('email', 'address'))
+    print(config.get('email', 'username'))
+    print(config.get('email', 'password'))
     you = "xxx"
     contents = """
     <html>
