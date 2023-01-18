@@ -28,7 +28,7 @@ def connect_smtp():
     username, passwd = config.get('email', 'username'), config.get('email', 'password')
     if username and passwd:
         connection.ehlo()
-        connection.login(config.get('email', 'username'), config.get('email', 'password'))
+        connection.login(username, passwd)
     return connection
 
 
@@ -63,6 +63,7 @@ def send_email(from_address, to_address, ccemail, subject, contents, subtype):
             email['Cc'] = ccemail
         email.set_content(contents, subtype=subtype)
         connection.send_message(email)
+        logger.debug("Email sent: " + to_address)
     finally:
         # close connection
         connection.close()
