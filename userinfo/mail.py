@@ -63,7 +63,7 @@ def send_email(from_address, to_address, ccemail, subject, contents, subtype):
             email['Cc'] = ccemail
         email.set_content(contents, subtype=subtype)
         connection.send_message(email)
-        logger.debug("Email sent: " + to_address)
+        logger.debug("Email sent: " + to_address, exc_info=True)
     finally:
         # close connection
         connection.close()
