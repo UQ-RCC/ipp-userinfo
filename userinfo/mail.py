@@ -46,7 +46,7 @@ def send_email(from_address, to_address, ccemail, subject, contents, subtype):
             connection = connect_smtp()
             connected = True
         except Exception as e:
-            logger.error(f"Problem with create smtp connection: {str(e)}")
+            logger.error(f"Problem with create smtp connection: {str(e)}", exc_info=True)
             if attempts < 3:
                 logger.debug("Try connecting to smtp server again...")
                 time.sleep(3)
@@ -63,7 +63,7 @@ def send_email(from_address, to_address, ccemail, subject, contents, subtype):
             email['Cc'] = ccemail
         email.set_content(contents, subtype=subtype)
         connection.send_message(email)
-        logger.error("Email sent: " + to_address, exc_info=True)
+        logger.debug("Email sent: " + to_address, exc_info=True)
     finally:
         # close connection
         connection.close()
@@ -90,7 +90,7 @@ def send_email_with_file(from_address, to_address, ccemail, subject, contents, f
             connection = connect_smtp()
             connected = True
         except Exception as e:
-            logger.error(f"Problem with create smtp connection: {str(e)}")
+            logger.error(f"Problem with create smtp connection: {str(e)}", exc_info=True)
             if attempts < 3:
                 logger.debug("Try connecting to smtp server again...")
                 time.sleep(3)
