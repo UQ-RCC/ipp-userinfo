@@ -102,5 +102,5 @@ async def send_feedback(title: str = Form(...), contents: str = Form(...), label
                     contents = f"{contents}This feedback has been submitted as a <a href={github_issue_url}>github issue</a>"
             mail.send_mail(to_emails, title, contents, subtype='plain', ccemail=useremail)
     except Exception as e:
-        logger.error(f"Problem sending email: {str(e)}")
+        logger.error(f"Problem sending email: {str(e)}", exc_info=True)
         raise
