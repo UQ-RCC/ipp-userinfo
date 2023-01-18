@@ -597,7 +597,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                 try:
                     mail.send_mail(email, subject, contents)
                 except Exception as e:
-                    logger.error(f"Problem sending email: {str(e)}")
+                    logger.error(f"Problem sending email: {str(e)}", exc_info=True)
                     raise
                 
 
