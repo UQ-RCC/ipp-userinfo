@@ -64,8 +64,9 @@ def send_email(from_address, to_address, ccemail, subject, contents, subtype):
             logger.info(f"Cc to {ccemail}")
             email['Cc'] = ccemail
         email.set_content(contents, subtype=subtype)
+        logger.info(email)
         connection.send_message(email)
-        logger.debug("Email sent: " + to_address)
+        logger.info("Email sent succesfully !")
     finally:
         # close connection
         connection.close()
@@ -74,7 +75,7 @@ def send_mail(to_address, subject, contents, subtype='html', ccemail=''):
     """
     Send email
     """
-    from_address = config.get('email', 'username')
+    from_address = config.get('email', 'address')
     send_email(from_address, to_address, ccemail, subject, contents, subtype)
 
 
@@ -123,7 +124,7 @@ def send_mail_with_file(to_address, subject, contents, filecontents, filename, c
     """
     Send email
     """
-    from_address = config.get('email', 'username')
+    from_address = config.get('email', 'address')
     send_email_with_file(from_address, to_address, ccemail, subject, contents, filecontents, filename)
 
 
