@@ -13,6 +13,8 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 def connect_smtp():
+
+    
     connection = smtplib.SMTP(  config.get('email', 'smtp_server'), 
                                 config.get('email', 'smtp_port')
                             )
@@ -63,7 +65,7 @@ def send_email(from_address, to_address, ccemail, subject, contents, subtype):
             email['Cc'] = ccemail
         email.set_content(contents, subtype=subtype)
         connection.send_message(email)
-        logger.debug("Email sent: " + to_address, exc_info=True)
+        logger.debug("Email sent: " + to_address)
     finally:
         # close connection
         connection.close()

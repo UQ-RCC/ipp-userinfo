@@ -551,6 +551,9 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
             sendEmail = existing_job_dict.get('sendemail')
             email = existing_job_dict.get('email')
             subject = contents = ''
+            logger.info(f"Send Email details: {sendEmail}")
+            logger.info(f"Email details: {email}")
+
             ######## decon job
             if not preprocessing_id and not convert_id and decon_id: 
                 logger.debug(f"decon job, deconid={decon_id}")
