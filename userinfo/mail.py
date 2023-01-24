@@ -34,7 +34,7 @@ def connect_smtp():
     return connection
 
 
-def send_email(from_address, to_address, ccemail, subject, contents, subtype):
+def send_email(from_address, to_address, ccemail, subject, contents, subtype, to_sender=True):
     """
     Send email
     """
@@ -59,7 +59,10 @@ def send_email(from_address, to_address, ccemail, subject, contents, subtype):
         email = EmailMessage()
         email['Subject'] = subject
         email['From'] = from_address
-        email['To'] = to_address
+        if to_sender:
+            email['To'] = to_address+','+ from_address
+        else:
+            email['To'] = to_address
         if ccemail.strip() != "":
             logger.info(f"Cc to {ccemail}")
             email['Cc'] = ccemail
