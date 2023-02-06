@@ -4,6 +4,9 @@ import userinfo.keycloak as keycloak
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import base64
+import logging
+
+logger = logging.getLogger('ippuserinfo')
 router = APIRouter()
 
 @router.get("/deconpage", response_model=udb.schemas.DeconPage)
@@ -138,6 +141,7 @@ def get_templates(user: dict = Depends(keycloak.decode),
     username = user.get('preferred_username')
     return udb.crud.get_templates(db, username)
 
+
 @router.post("/templates", response_model=udb.schemas.Template)
 def create_template(
                 templatename: str,
@@ -168,6 +172,43 @@ def delete_template(templateid: int,
     if not template:
         return HTTPException(status_code=404, detail=f"Not found template with id: {templateid}")
     udb.crud.delete_template(db, template)
+
+
+####pinhole claculator settings 
+@router.get("/pinholeCalcSettings/{illuminationType}/{isglobal}", response_model=List[udb.schemas.PcalSetting])
+def get_pincal_setting(illuminationType: str,
+                isglobal: bool,
+                user: dict = Depends(keycloak.decode), 
+                db: Session = Depends(udb.get_db)):
+    
+    logger.info(f"Inside get setting", exc_info=True)
+    logger.info(f"Inside get setting, isglobal : {isglobal}", exc_info=True)
+    if (isglobal):
+        username = "admin"
+    else:
+        username = user.get('preferred_username')
+            
+    logger.debug(f"selected username : {username}", exc_info=True)
+    return udb.crud.get_pincal_settings(db, username, illuminationType)
+
+
+@router.post("/pinholeCalcSettings", response_model=udb.schemas.PcalSetting)
+def create_setting_file(
+                setting: udb.schemas.PcalSettingCreate,
+                db: Session = Depends(udb.get_db)):
+    logger.info(f"Inside get post", exc_info=True)
+    return udb.crud.create_setting_file(db, setting)
+
+
+@router.delete("/pinholeCalcSettings/{settingid}")
+def delete_setting_file(settingid: int,
+                user: dict = Depends(keycloak.decode), 
+                db: Session = Depends(udb.get_db)):
+    username = user.get('preferred_username')
+    settingFile = udb.crud.get_pincal_setting_file(db, username, settingid)
+    if not settingFile:
+        return HTTPException(status_code=404, detail=f"Not found record with id: {settingid}")
+    udb.crud.delete_pincal_setting_file(db, settingFile)
 
 ######## job
 @router.get("/jobs", response_model=List[udb.schemas.Job])

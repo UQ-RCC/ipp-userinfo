@@ -337,6 +337,37 @@ def delete_template(db: Session, template: models.Template):
     db.delete(template)
     db.commit()
 
+#############pinhole calculator settings #########
+def get_pincal_settings(db:Session, username: str, illuminationType:str):
+    logger.info(f"get settings list ",exc_info=True)
+
+    q = db.query(models.PcalSetting).\
+            filter(models.PcalSetting.username == username).\
+                filter(models.PcalSetting.illuminationtype == illuminationType)
+    
+    logger.info(f"get settings list queary :{q} ",exc_info=True)
+    return q.all()
+            
+
+def create_setting_file(db: Session, setting: schemas.PcalSettingCreate):
+    # create setting
+    logger.debug(f"New pinhole calculator settings: {setting}")
+    db_setting = models.PcalSetting(**setting.dict())
+    db.add(db_setting)
+    db.commit()
+    db.flush()
+    # db.refresh(db_template)
+    return db_setting
+
+def get_pincal_setting_file(db: Session, username: str, settingid: int):
+    return db.query(models.PcalSetting).\
+            filter(models.PcalSetting.username == username).\
+            filter(models.PcalSetting.id == settingid).\
+            first()
+
+def delete_pincal_setting_file(db: Session, setting: models.PcalSetting):
+    db.delete(setting)
+    db.commit()
 
 ############# jobs #################
 def get_jobs(db:Session, username: str, all):

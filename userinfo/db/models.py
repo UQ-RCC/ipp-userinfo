@@ -251,6 +251,26 @@ class Template(Base):
     setting_id = Column(Integer, ForeignKey('setting.id'))
     setting = relationship("Setting", back_populates="template")
 
+class PcalSetting(Base):
+    '''
+    This table contains pinhole calculator settings from gobal and local user
+    '''
+    
+    __tablename__ = 'pcalsetting'
+    id = Column(Integer, primary_key=True, index=True)
+    username =  Column(String, primary_key=False, index=False, nullable=False)
+    name = Column(String, primary_key=False, index=False, nullable=False)
+    illuminationtype = Column(String, primary_key=False, index=False, nullable=False)
+    objmagnification = Column(Float, primary_key=False, index=False, nullable=False)  
+    auxmagnification = Column(Float, primary_key=False, index=False, nullable=False)  
+    pinholesize = Column(Float, primary_key=False, index=False, nullable=True) 
+    model = Column(String, primary_key=False, index=False, nullable=True)
+    pinholeshape = Column(String, primary_key=False, index=False, nullable=True)
+    pinholeside = Column(String, primary_key=False, index=False, nullable=True)
+    shapefactor = Column(Float, primary_key=False, index=False, nullable=True) 
+    sysmagnification = Column(Float, primary_key=False, index=False, nullable=True) 
+    pinholespacing = Column(Float, primary_key=False, index=False, nullable=True) 
+
 class Decon(Base):
     __tablename__ = 'decon'
     id = Column(Integer, primary_key=True, index=True)

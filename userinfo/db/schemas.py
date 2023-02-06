@@ -59,6 +59,31 @@ class Template(TemplateBase):
     class Config:
         orm_mode = True
 
+#################################
+#### Pinhole calculator settings
+#################################
+class PcalSettingBase(BaseModel):
+    username: str
+    name: str
+    illuminationtype: str
+    objmagnification: float
+    auxmagnification: float
+    pinholesize: Optional[float] = None
+    model: Optional[str] = None
+    pinholeshape: Optional[str] = None
+    pinholeside: Optional[str] = None
+    shapefactor: Optional[float] = None
+    sysmagnification: Optional[float] = None
+    pinholespacing: Optional[float] = None
+
+class PcalSettingCreate(PcalSettingBase):
+    pass
+
+class PcalSetting(PcalSettingBase):
+    id: int
+
+    class Config:
+        orm_mode = True
 
 #################################
 ### Job
