@@ -349,15 +349,26 @@ def get_pincal_settings(db:Session, username: str, illuminationType:str):
     return q.all()
             
 
-def create_setting_file(db: Session, setting: schemas.PcalSettingCreate):
+def create_setting_file(db: Session, setting: schemas.PcalSettingCreate, username: str):
     # create setting
-    logger.debug(f"New pinhole calculator settings: {setting}")
+    logger.debug(f"Add new pinhole calculator settings: {setting}")
     db_setting = models.PcalSetting(**setting.dict())
     db.add(db_setting)
+    logger.debug(f"Add new record: {db_setting}", exc_info=True)
     db.commit()
     db.flush()
-    # db.refresh(db_template)
     return db_setting
+
+def update_setting_file (db: Session, existing_file_record: models.PcalSetting, username: str, file_name:str, setting: schemas.PcalSettingCreate):
+    logger.debug(f"Update pinhole calculator settings: {existing_file_record}")
+    existing_file_record_dict = row2dict(existing_file_record)
+    stored_item_model = schemas.PcalSettingCreate(**existing_file_record_dict)
+    update_data = setting.dict(exclude_unset=True)
+    updated_item = stored_item_model.copy(update=update_data)
+    logger.debug(f"Update existing record with new data: {updated_item}", exc_info=True)
+    db.query(models.PcalSetting).filter(models.PcalSetting.username == username).filter(models.PcalSetting.name == file_name).update(updated_item.dict())
+    db.commit()
+
 
 def get_pincal_setting_file(db: Session, username: str, settingid: int):
     return db.query(models.PcalSetting).\
@@ -368,6 +379,13 @@ def get_pincal_setting_file(db: Session, username: str, settingid: int):
 def delete_pincal_setting_file(db: Session, setting: models.PcalSetting):
     db.delete(setting)
     db.commit()
+
+def get_record_by_name(db: Session, username: str, name: str):
+    return db.query(models.PcalSetting).\
+            filter(models.PcalSetting.username == username).\
+            filter(models.PcalSetting.name == name).\
+            first()
+
 
 ############# jobs #################
 def get_jobs(db:Session, username: str, all):

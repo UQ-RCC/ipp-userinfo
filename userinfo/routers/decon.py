@@ -127,7 +127,7 @@ def update_settings(
     username = user.get('preferred_username')
     stored_setting = udb.crud.get_one_setting(db, settingid)
     if not stored_setting:
-        return HTTPException(status_code=400, detail=f"Could not find the setting with id: {settindid}")
+        return HTTPException(status_code=400, detail=f"Could not find the setting with id: {settingid}")
     if not stored_setting.decon or stored_setting.decon.deconpage_id != username:
         return HTTPException(status_code=400, detail=f"Setting with id: {settingid} does not belong to user: {username}")
     udb.crud.update_setting(db, username, settingid, setting)
@@ -195,9 +195,16 @@ def get_pincal_setting(illuminationType: str,
 @router.post("/pinholeCalcSettings", response_model=udb.schemas.PcalSetting)
 def create_setting_file(
                 setting: udb.schemas.PcalSettingCreate,
+                user: dict = Depends(keycloak.decode),
                 db: Session = Depends(udb.get_db)):
-    logger.info(f"Inside get post", exc_info=True)
-    return udb.crud.create_setting_file(db, setting)
+    username = user.get('preferred_username')
+    file_name = setting.name
+    existing_file_record =  udb.crud.get_record_by_name(db,username,file_name)
+    if existing_file_record:
+        return udb.crud.update_setting_file(db,existing_file_record,username,file_name,setting)
+    else:
+        logger.info(f"Inside get post: {setting.name}", exc_info=True)
+        return udb.crud.create_setting_file(db, setting, username )
 
 
 @router.delete("/pinholeCalcSettings/{settingid}")
