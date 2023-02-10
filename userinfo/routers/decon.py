@@ -195,11 +195,11 @@ def get_pincal_setting(illuminationType: str,
 @router.post("/pinholeCalcSettings", response_model=udb.schemas.PcalSetting)
 def create_setting_file(
                 setting: udb.schemas.PcalSettingCreate,
-                user: dict = Depends(keycloak.decode),
                 db: Session = Depends(udb.get_db)):
-    username = user.get('preferred_username')
+    username = setting.username
     file_name = setting.name
     existing_file_record =  udb.crud.get_record_by_name(db,username,file_name)
+    logger.info(f"Inside get post existing_file_record: {existing_file_record}", exc_info=True)
     if existing_file_record:
         return udb.crud.update_setting_file(db,existing_file_record,username,file_name,setting)
     else:
