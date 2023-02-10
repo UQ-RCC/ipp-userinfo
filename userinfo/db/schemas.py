@@ -65,9 +65,9 @@ class Template(TemplateBase):
 class PcalSettingBase(BaseModel):
     username: str
     name: str
-    illuminationtype: str
-    objmagnification: float
-    auxmagnification: float
+    illuminationtype: Optional[str] = None
+    objmagnification: Optional[float] = None
+    auxmagnification: Optional[float] = None
     pinholesize: Optional[float] = None
     model: Optional[str] = None
     pinholeshape: Optional[str] = None
