@@ -370,9 +370,8 @@ def update_setting_file (db: Session, existing_file_record: models.PcalSetting, 
     db.commit()
 
 
-def get_pincal_setting_file(db: Session, username: str, settingid: int):
+def get_pincal_setting_file(db: Session, settingid: int):
     return db.query(models.PcalSetting).\
-            filter(models.PcalSetting.username == username).\
             filter(models.PcalSetting.id == settingid).\
             first()
 

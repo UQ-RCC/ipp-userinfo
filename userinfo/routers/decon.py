@@ -208,11 +208,10 @@ def create_setting_file(
 
 
 @router.delete("/pinholeCalcSettings/{settingid}")
-def delete_setting_file(settingid: int,
-                user: dict = Depends(keycloak.decode), 
+def delete_setting_file(settingid: int, 
                 db: Session = Depends(udb.get_db)):
-    username = user.get('preferred_username')
-    settingFile = udb.crud.get_pincal_setting_file(db, username, settingid)
+    #username = user.get('preferred_username')
+    settingFile = udb.crud.get_pincal_setting_file(db, settingid)
     if not settingFile:
         return HTTPException(status_code=404, detail=f"Not found record with id: {settingid}")
     udb.crud.delete_pincal_setting_file(db, settingFile)
