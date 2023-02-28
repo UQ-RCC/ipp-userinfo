@@ -79,10 +79,25 @@ class PsfTypes(enum.Enum):
     TwoPhoton = 2
     LightSheet = 3
     SpinningDisk = 4
+    RCM = 6
+    iSIM = 7
+    SoRa = 8
+    NL5 = 9
+    RCM2 = 10
 
 class PsfModels(enum.Enum):
     Scalar = 0
     Vectorial = 1
+
+class SlitDirection(enum.Enum):
+    Vertical = 0
+    Horizontal = 1
+
+class TubeLens (enum.Enum):
+    Leica = 200.0
+    Nikon = 200.0
+    Olympus = 180.0
+    Zeiss = 165.0
 
 class MediumRIOptions(enum.Enum):
     Presets = -1
@@ -174,6 +189,10 @@ class Setting(Base):
     # ns = mediumRIOption
     ns = Column(Float, primary_key=False, index=False, nullable=True, default=1.33)
     mediumRIOption = Column(Enum(MediumRIOptions), primary_key=False, index=False, nullable=True, default=MediumRIOptions.Water)
+    objMagnification = Column(Float, primary_key=False, index=False, nullable=True)
+    slitWidth = Column(Float, primary_key=False, index=False, nullable=True)
+    slitDirection = Column(Enum(SlitDirection), primary_key=False, index=False, nullable=True)
+    lensFocalLength = Column(Enum(TubeLens), primary_key=False, index=False, nullable=True)
     #
     NA = Column(Float, primary_key=False, index=False, nullable=True, default=1.4)
     lightSheetIlluminationNA = Column(Float, primary_key=False, index=False, nullable=True, default=0.5)
