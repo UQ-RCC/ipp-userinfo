@@ -75,6 +75,7 @@ class PcalSettingBase(BaseModel):
     shapefactor: Optional[float] = None
     sysmagnification: Optional[float] = None
     pinholespacing: Optional[float] = None
+    pinholeradius: Optional[float] = None
 
 class PcalSettingCreate(PcalSettingBase):
     pass

@@ -289,6 +289,7 @@ class PcalSetting(Base):
     shapefactor = Column(Float, primary_key=False, index=False, nullable=True) 
     sysmagnification = Column(Float, primary_key=False, index=False, nullable=True) 
     pinholespacing = Column(Float, primary_key=False, index=False, nullable=True) 
+    pinholeradius = Column(Float, primary_key=False, index=False, nullable=True) 
 
 class Decon(Base):
     __tablename__ = 'decon'
