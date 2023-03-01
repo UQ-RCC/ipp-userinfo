@@ -191,8 +191,8 @@ class Setting(Base):
     mediumRIOption = Column(Enum(MediumRIOptions), primary_key=False, index=False, nullable=True, default=MediumRIOptions.Water)
     objMagnification = Column(Float, primary_key=False, index=False, nullable=True)
     slitWidth = Column(Float, primary_key=False, index=False, nullable=True)
-    slitDirection = Column(Enum(SlitDirection), primary_key=False, index=False, nullable=True)
-    lensFocalLength = Column(Enum(TubeLens), primary_key=False, index=False, nullable=True)
+    slitDirection = Column(Enum(SlitDirection), primary_key=False, index=False, nullable=True, default=SlitDirection.Horizontal)
+    lensFocalLength = Column(Enum(TubeLens), primary_key=False, index=False, nullable=True, default=TubeLens.Leica)
     #
     NA = Column(Float, primary_key=False, index=False, nullable=True, default=1.4)
     lightSheetIlluminationNA = Column(Float, primary_key=False, index=False, nullable=True, default=0.5)
