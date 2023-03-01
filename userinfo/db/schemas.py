@@ -178,7 +178,7 @@ class SettingBase(BaseModel):
     objMagnification: Optional[float] = None
     slitWidth: Optional[float] = None
     slitDirection : models.SlitDirection = models.SlitDirection.Horizontal
-    lensFocalLength = models.TubeLens = models.TubeLens.Leica
+    lensFocalLength: models.TubeLens = models.TubeLens.Leica
    
     NA : Optional[float] = None
     lightSheetIlluminationNA : Optional[float] = None
