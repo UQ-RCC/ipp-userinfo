@@ -175,6 +175,11 @@ class SettingBase(BaseModel):
     psfModel : models.PsfModels = models.PsfModels.Scalar
     ns : Optional[float] = None
     mediumRIOption : models.MediumRIOptions = models.MediumRIOptions.Water
+    objMagnification: Optional[float] = None
+    slitWidth: Optional[float] = None
+    slitDirection : models.SlitDirection
+    lensFocalLength = models.TubeLens
+   
     NA : Optional[float] = None
     lightSheetIlluminationNA : Optional[float] = None
     RI : Optional[float] = None
