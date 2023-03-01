@@ -175,10 +175,10 @@ class SettingBase(BaseModel):
     psfModel : models.PsfModels = models.PsfModels.Scalar
     ns : Optional[float] = None
     mediumRIOption : models.MediumRIOptions = models.MediumRIOptions.Water
-    objMagnification: Optional[float] = None
+    """ objMagnification: Optional[float] = None
     slitWidth: Optional[float] = None
     slitDirection : models.SlitDirection = models.SlitDirection.Horizontal
-    lensFocalLength: models.TubeLens = models.TubeLens.Leica
+    lensFocalLength: models.TubeLens = models.TubeLens.Leica """
    
     NA : Optional[float] = None
     lightSheetIlluminationNA : Optional[float] = None
