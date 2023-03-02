@@ -94,10 +94,10 @@ class SlitDirection(enum.Enum):
     Horizontal = 1
 
 class TubeLens (enum.Enum):
-    Leica = 200.0
-    Nikon = 200.0
-    Olympus = 180.0
-    Zeiss = 165.0
+    Leica = 0
+    Nikon = 1
+    Olympus = 2
+    Zeiss = 3
 
 class MediumRIOptions(enum.Enum):
     Presets = -1
@@ -191,8 +191,8 @@ class Setting(Base):
     mediumRIOption = Column(Enum(MediumRIOptions), primary_key=False, index=False, nullable=True, default=MediumRIOptions.Water)
     objMagnification = Column(Float, primary_key=False, index=False, nullable=True)
     slitWidth = Column(Float, primary_key=False, index=False, nullable=True)
-    slitDirection = Column(Enum(SlitDirection), primary_key=False, index=False, nullable=True, default=SlitDirection.Horizontal)
-    lensFocalLength = Column(Enum(TubeLens), primary_key=False, index=False, nullable=True, default=TubeLens.Leica)
+    slitDirection = Column(Enum(SlitDirection), primary_key=False, index=False, nullable=True)
+    lensFocalLength = Column(Enum(TubeLens), primary_key=False, index=False, nullable=True)
     #
     NA = Column(Float, primary_key=False, index=False, nullable=True, default=1.4)
     lightSheetIlluminationNA = Column(Float, primary_key=False, index=False, nullable=True, default=0.5)

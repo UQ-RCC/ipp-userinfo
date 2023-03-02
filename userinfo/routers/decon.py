@@ -42,6 +42,7 @@ def update_decon(  deconid: int,
                 user: dict = Depends(keycloak.decode), 
                 db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')
+    logger.debug(f"update: {setting}", exc_info=True)
     udb.crud.update_decon(db, username, deconid, decon, setting)
     
 
