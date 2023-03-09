@@ -155,6 +155,7 @@ class FileFormatType(enum.Enum):
     Imaris50 = 3
     Slidebook60 = 4
     ArivisSIS = 5
+    IMS = 6
 
 class SplitChannelType(enum.Enum):
     NoSplit = 0 
