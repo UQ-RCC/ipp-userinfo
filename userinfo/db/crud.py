@@ -567,6 +567,36 @@ def create_preprocessing_email_contents(existing_job_dict, preprocessing, psetti
     contents = f"{contents} <p/> <p/>Best Regards,"
     return contents
 
+def create_macro_email_contents(existing_job_dict, macro, new_job_status):
+    """
+    Create html contents of the emails
+    """
+    if not macro.outputPath:
+        macro.outputPath = "/"
+    if not macro.outputPath.endswith('/'):
+        macro.outputPath = macro.outputPath + '/'
+    output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(macro.outputPath)
+    contents = f"""
+    <html>
+        <head></head>
+        <body>
+            <p>Dear Image Processing Portal user!<br />
+            Your recent macro job has finished. <br />
+            Job information:<br />
+            <ul> 
+            <li>Job status: {new_job_status} </li>
+            <li>System job id: {existing_job_dict.get('id')} </li>
+            <li>Slurm job id : {existing_job_dict.get('jobid')} </li>
+            <li>Output folder: <a href="{output_access_url}">{macro.outputPath}</a></li> <br />
+            
+            <p> The following files/series were processed: <br />
+            <ul>"""
+    for inputPath in macro.inputPaths:
+        contents = f"{contents}<li>{inputPath}</li>"
+    contents = f"{contents}</ul><br />"
+    contents = f"{contents} Best Regards,"
+    return contents
+
 
 def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     logger.debug(f"Updating jobid: {jobid}")
@@ -596,6 +626,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
             decon_id = existing_job_dict.get('decon_id')
             preprocessing_id = existing_job_dict.get('preprocessing_id')
             convert_id = existing_job_dict.get('convert_id')
+            macro_id = existing_job_dict.get('macro_id')
             sendEmail = existing_job_dict.get('sendemail')
             email = existing_job_dict.get('email')
             subject = contents = ''
@@ -603,7 +634,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
             logger.info(f"Email details: {email}")
 
             ######## decon job
-            if not preprocessing_id and not convert_id and decon_id: 
+            if not preprocessing_id and not convert_id and not macro_id and decon_id: 
                 logger.debug(f"decon job, deconid={decon_id}")
                 total_jobs = db.query(models.Job).filter(models.Job.decon_id == decon_id).all()
                 # meaning a new job is done/or failed
@@ -626,14 +657,14 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                 else:
                     sendEmail = False
             #### convert job
-            elif not preprocessing_id and convert_id and not decon_id:
+            elif not preprocessing_id and convert_id and not decon_id and not macro_id:
                 logger.debug(f"Convert job, convertid={convert_id}")
                 if sendEmail:
                     convert = db.query(models.Convert).filter(models.Convert.id == convert_id).first()
                     subject = 'Your conversion job has finished!'
                     contents = create_convert_email_contents(existing_job_dict, convert, new_job_stat)
             #### preprocess job
-            elif preprocessing_id and not convert_id and not decon_id:
+            elif preprocessing_id and not convert_id and not decon_id and not macro_id:
                 logger.debug(f"Preprocessing job - preprocessingid={preprocessing_id}")
                 if sendEmail:
                     preprocessing = db.query(models.Preprocessing).filter(models.Preprocessing.id == preprocessing_id).first()
@@ -644,6 +675,13 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                         psetting.path = _serie.path
                     subject = 'Your preprocessing job has finished!'
                     contents = create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings, new_job_stat)
+            #### macro job
+            elif macro_id and not preprocessing_id and not convert_id and not decon_id:
+                logger.debug(f"Macro job, macro_id={macro_id}")
+                if sendEmail:
+                    macro = db.query(models.Macro).filter(models.Macro.id == macro_id).first()
+                    subject = 'Your macro job has finished!'
+                    contents = create_macro_email_contents(existing_job_dict, macro, new_job_stat)
             if sendEmail:
                 try:
                     mail.send_mail(email, subject, contents)
@@ -751,9 +789,10 @@ def get_convert_job(db: Session, username: str, email: str, convertid:int, sende
             filter(models.Job.convert_id == convertid).\
             filter(models.Job.decon_id == None).\
             filter(models.Job.preprocessing_id == None ).\
+            filter(models.Job.macro_id == None).\
             first()
     if not job:
-        job = models.Job(id=shortuuid.uuid(), username=username, email=email, decon_id=None, convert_id=convertid, preprocessing_id=None, sendemail=sendemail)
+        job = models.Job(id=shortuuid.uuid(), username=username, email=email, decon_id=None, convert_id=convertid, preprocessing_id=None, macro_id=None, sendemail=sendemail)
         db.add(job)
         db.flush()
         db.commit()
@@ -844,12 +883,13 @@ def get_processing_job(db: Session, username: str, email: str, preprocessingid: 
             filter(models.Job.preprocessing_id == preprocessingid).\
             filter(models.Job.decon_id == None).\
             filter(models.Job.convert_id == None).\
+            filter(models.Job.macro_id == None).\
             first()
     if not job:
         logger.debug("Create new processing job:")
         job = models.Job(id=shortuuid.uuid(), username=username, email=email, 
                         decon_id=None, convert_id=None, preprocessing_id=preprocessing.id, 
-                        sendemail=sendemail)
+                        macro_id=None, sendemail=sendemail)
         db.add(job)
         db.flush()
         db.commit()
@@ -928,5 +968,54 @@ def update_psetting(db: Session, username: str, psetting_id: int, psetting: sche
     db.query(models.PSetting).filter(models.PSetting.id == psetting_id).update(updated_psetting_item_dict)
     db.commit()
 
+#### macro page
+def get_macro(db: Session, username: str):
+    return db.query(models.Macro).\
+            filter(models.Macro.username == username).\
+            first()
 
+def create_new_macro(db: Session, username: str, payload: schemas.MacroCreate):
+    macro = models.Macro(**payload.dict())
+    db.add(macro)
+    db.commit()
+    db.flush()
+    #db.refresh(macro)
+    return macro
+
+def update_macro(db: Session, username: str, macro_id: int, payload: schemas.MacroCreate ):
+    a_macro = get_a_macro(db, username, macro_id)
+    if a_macro == None:
+        raise NotfoundException(f"Cannot find preprocessing with id={macro_id}")
+    a_macro.outputPath = payload.outputPath
+    a_macro.inputs = payload.inputs
+    a_macro.inputPaths = payload.inputPaths
     
+    a_macro.instances = payload.instances
+    a_macro.gpus = payload.gpus
+    a_macro.mem = payload.mem
+
+    db.commit()
+    
+
+# get a macro
+def get_a_macro(db: Session, username: str, macro_id: int):
+    return db.query(models.Macro).\
+            filter(models.Macro.id == macro_id).\
+            filter(models.Macro.username == username).\
+            first()
+
+
+
+def get_macro_job(db: Session, username: str, email: str, macro_id:int, sendemail: bool):
+    macro = get_a_macro(db, username, macro_id)
+    if not macro: 
+        raise NotfoundException(f"Cannot find macro with id={macro_id}")
+    job = db.query(models.Job).\
+            filter(models.Job.macro_id == macro_id).\
+            first()
+    if not job:
+        job = models.Job(id=shortuuid.uuid(), username=username, email=email, decon_id=None, convert_id=None, preprocessing_id=None, macro_id=macro_id, sendemail=sendemail )
+        db.add(job)
+        db.flush()
+        db.commit()
+    return job

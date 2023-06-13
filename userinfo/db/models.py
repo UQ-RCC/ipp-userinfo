@@ -371,7 +371,21 @@ class PreprocessingPage(Base):
     username = Column(String, primary_key=True, index=True)
     preprocessing = relationship("Preprocessing", uselist=False, back_populates="preprocessingpage")
 
+##### macro ##################################
 
+class Macro(Base):
+    __tablename__ = 'macro'
+    id = Column(Integer, primary_key=True, index=True)
+    outputPath = Column(String, primary_key=False, unique=False, index=False, nullable=True)
+    username = Column(String, primary_key=False, unique=False, index=False, nullable=True)
+    inputs = Column(mutable_json_type(dbtype=JSONB, nested=True), nullable=True)
+    inputPaths = Column(MutableList.as_mutable(PickleType), default=[])
+    ### devices
+    instances = Column(Integer, primary_key=False, index=False, nullable=True)
+    mem = Column(Float, primary_key=False, index=False, nullable=True)
+    gpus = Column(Integer, primary_key=False, index=False, nullable=True)
+    ## job
+    job = relationship("Job", uselist=False, back_populates="macro")
 
 ##### converter ###############################
 class Convert(Base):
@@ -432,6 +446,10 @@ class Job(Base):
     # preprocessing
     preprocessing_id = Column(Integer, ForeignKey("preprocessing.id"), nullable=True)
     preprocessing =  relationship("Preprocessing", back_populates="job")
+    # preprocessing
+    macro_id = Column(Integer, ForeignKey("macro.id"), nullable=True)
+    macro =  relationship("Macro", back_populates="job")
+
     # send email not or
     sendemail = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
     

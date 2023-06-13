@@ -106,6 +106,7 @@ class JobBase(BaseModel):
     reqmem: Optional[float] = None
     decon_id: Optional[int] = None
     convert_id: Optional[int] = None
+    macro_id: Optional[int] = None
     preprocessing_id: Optional[int] = None
     sendemail: bool = True
 
@@ -361,5 +362,29 @@ class PreprocessingPageBase(BaseModel):
 
 class PreprocessingPage(PreprocessingPageBase):
     preprocessing: Preprocessing = None
+    class Config:
+        orm_mode = True
+
+
+#################################
+###Macros
+#################################
+class MacroBase(BaseModel):
+    outputPath: Optional[str] = None
+    username: Optional[str] = None
+    inputs:  dict ={}
+    inputPaths: List[str] = []
+    ### devices
+    instances : Optional[int] = None
+    mem : Optional[float] = None
+    gpus : Optional[int] = None   
+    
+    
+class MacroCreate(MacroBase):
+    pass
+
+class Macro(MacroBase):
+    id: int
+    job: Job = None
     class Config:
         orm_mode = True

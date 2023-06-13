@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import user, job, fileexplorer, decon, version, converter, preprocessing
+from .routers import user, job, fileexplorer, decon, version, converter, preprocessing, macro
 import userinfo.config as config
 from logging.handlers import TimedRotatingFileHandler
 
@@ -87,6 +87,14 @@ userinfoapi.include_router(
     preprocessing.router,
     prefix="/preferences", 
     tags=["preprocessing"], 
+    responses={404: {"description": "Not found"}},
+)
+
+# macro page
+userinfoapi.include_router(
+    macro.router,
+    prefix="/preferences", 
+    tags=["macro"], 
     responses={404: {"description": "Not found"}},
 )
 
