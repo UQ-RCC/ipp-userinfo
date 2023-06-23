@@ -1006,16 +1006,20 @@ def get_a_macro(db: Session, username: str, macro_id: int):
 
 
 
-def get_macro_job(db: Session, username: str, email: str, macro_id:int, sendemail: bool):
+def create_macro_and_job(db: Session, username: str, email: str, macro_id:int, sendemail: bool):
     macro = get_a_macro(db, username, macro_id)
     if not macro: 
         raise NotfoundException(f"Cannot find macro with id={macro_id}")
-    job = db.query(models.Job).\
-            filter(models.Job.macro_id == macro_id).\
-            first()
-    if not job:
-        job = models.Job(id=shortuuid.uuid(), username=username, email=email, decon_id=None, convert_id=None, preprocessing_id=None, macro_id=macro_id, sendemail=sendemail )
-        db.add(job)
-        db.flush()
-        db.commit()
+    #create new macro for the job first
+    db_macro = models.Macro(outputPath = macro.outputPath, 
+                            inputs = macro.inputs, 
+                            inputPaths = macro.inputPaths, 
+                            instances = macro.instances, mem = macro.mem, gpus = macro.gpus) 
+    db.add(db_macro)
+    db.flush()
+    #now create job
+    job = models.Job(id=shortuuid.uuid(), username=username, email=email, decon_id=None, convert_id=None, preprocessing_id=None, macro_id=db_macro.id, sendemail=sendemail )
+    db.add(job)
+    db.flush()
+    db.commit()
     return job

@@ -28,9 +28,9 @@ def update_macro(macro_id:int, payload:udb.schemas.MacroCreate, user: dict = Dep
     return udb.crud.update_macro(db, username, macro_id, payload)
 
 ######## job
-@router.get("/macro/{macro_id}/job", response_model=udb.schemas.Job)
-def get_macro_job(macro_id: int, sendemail: bool, user: dict = Depends(keycloak.decode), 
+@router.post("/macro/jobs", response_model=udb.schemas.Job)
+def create_macro_job(macro_id: int, sendemail: bool, user: dict = Depends(keycloak.decode), 
                     db: Session = Depends(udb.get_db)):
     username = user.get('preferred_username')
     email = user.get('email')
-    return udb.crud.get_macro_job(db, username, email, macro_id, sendemail)
+    return udb.crud.create_macro_and_job(db, username, email, macro_id, sendemail)
