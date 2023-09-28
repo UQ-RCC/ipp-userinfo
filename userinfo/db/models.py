@@ -316,6 +316,13 @@ class DeconPage(Base):
     username = Column(String, primary_key=True, index=True)
     decons = relationship("Decon", back_populates="deconpage")
     
+class ApiSetting(Base):
+    __tablename__ = 'apisetting'
+    apiname = Column(String, primary_key=True, index=True)
+    updatedby = Column(String, primary_key=False, index=False, nullable=True)
+    updatedon = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.utcnow)
+   
+
 
 def generate_uuid():
     return shortuuid.uuid()

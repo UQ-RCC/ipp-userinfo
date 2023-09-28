@@ -426,6 +426,7 @@ def create_decon_email_contents(finished_jobs, series, setting):
     """
     Create html contents of the emails
     """
+    logger.debug(f"decon email setings: {setting}")
     setting_dict = row2dict(setting)
     _job_output_path = setting.outputPath
     if not _job_output_path:
@@ -1023,3 +1024,37 @@ def create_macro_and_job(db: Session, username: str, email: str, macro_id:int, s
     db.flush()
     db.commit()
     return job
+
+###Update api settings
+
+def get_api(db: Session):
+    return db.query(models.ApiSetting).\
+        filter(models.ApiSetting.apiname != None).\
+        filter(models.ApiSetting.updatedby != None).\
+        filter(models.ApiSetting.updatedon != None).\
+        first()
+
+
+def create_api_setting(db: Session, username: str, api:str):
+    # check if exists
+    db_api_setting =  models.ApiSetting(apiname = api, updatedby = username, updatedon = datetime.datetime.utcnow())
+    db.add(db_api_setting)
+    db.flush()
+    db.commit()
+    
+
+
+def update_api_setting(db:Session, username: str, api:str):
+    current_api = get_api(db)
+    if not current_api:
+        create_api_setting(db,username,api)
+    else:
+        current_api.apiname = api
+        current_api.username = username
+        current_api.updatedon = datetime.datetime.utcnow() 
+    
+    db.commit()
+    return current_api
+
+
+

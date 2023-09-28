@@ -154,6 +154,25 @@ class DeconPage(BaseModel):
     class Config:
         orm_mode = True
 
+##################################
+### api setting
+##################################
+class ApiSetting(BaseModel):
+    apiname: str
+    updatedby: str
+    updatedon: datetime
+
+    class Config:
+        orm_mode = True
+   
+""" class ApiSettingCreate(ApiSettingBase):
+    pass
+
+class ApiSetting(ApiSettingBase):
+    class Config:
+        orm_mode = True """
+
+
 
 #################################
 ### Setting
