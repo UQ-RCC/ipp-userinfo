@@ -20,11 +20,11 @@ def get_deconpage(user: dict = Depends(keycloak.decode), db: Session = Depends(u
 
 
 @router.get("/deconpage/decons", response_model=List[udb.schemas.Decon])
-def get_decons_in_page(user: dict = Depends(keycloak.decode), 
+def get_decons_in_page( api: str, user: dict = Depends(keycloak.decode), 
                         db: Session = Depends(udb.get_db),
                         path: Optional[str] = None):
     username = user.get('preferred_username')
-    return udb.crud.get_decons(db, username, path)
+    return udb.crud.get_decons(db, username, api, path)
     
 @router.post("/deconpage/decons", response_model=udb.schemas.Decon)
 def create_decon(series_id: int,

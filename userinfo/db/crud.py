@@ -161,7 +161,7 @@ def delete_decon_from_path(db: Session, username: str, path: str):
     db.commit()
     
 
-def get_decons(db: Session, username: str, path: str):
+def get_decons(db: Session, username: str, api:str, path: str):
     db_deconpage = get_deconpage(db, username)
     if not db_deconpage:
         db_deconpage = create_deconpage(db, username)
@@ -174,11 +174,19 @@ def get_decons(db: Session, username: str, path: str):
         for d, s in db.query(models.Decon, models.Series).\
                     filter(models.Decon.series_id == models.Series.id).\
                     filter(models.Decon.deconpage_id == username).\
-                    filter(models.Series.path == decoded_path).all():
+                    filter(models.Series.path == decoded_path).\
+                    filter(models.Decon.api == api).all():
             decons.append(d)
         # print (len(decons))
     else:
-        decons = db_deconpage.decons
+        #decons = db_deconpage.decons
+        api = base64.b64decode(api).decode("utf-8")
+        for d, s in db.query(models.Decon, models.DeconPage).\
+                    filter(models.Decon.deconpage_id == models.DeconPage.username ).\
+                    filter(models.Decon.deconpage_id == username ).\
+                    filter(models.Decon.api == api).all():
+            decons.append(d)
+        logger.debug(f"update: {decons}", exc_info=True)
     return decons
     
 def get_decon_from_deconpage(db: Session, username: str, deconid: int):

@@ -130,6 +130,7 @@ class DeconBase(BaseModel):
     step: int = 1
     selected: bool = False
     visitedSteps: List[int] = []
+    api:str = None
     
 class DeconCreate(DeconBase):
     pass

@@ -310,6 +310,7 @@ class Decon(Base):
     step = Column(Integer, primary_key=False, index=False, default=1)
     visitedSteps = Column(MutableList.as_mutable(PickleType), default=[])
     selected = Column(Boolean, primary_key=False, index=False, default=False)
+    api = Column(String,primary_key=False, index=False)
     
 class DeconPage(Base):
     __tablename__ = 'deconpage'
