@@ -4,6 +4,7 @@ WORKDIR /app
 RUN apk update
 RUN apk add --no-cache --virtual .build-deps \
     gcc \
+    g++ \
     python3-dev \
     musl-dev \
     postgresql-dev \
