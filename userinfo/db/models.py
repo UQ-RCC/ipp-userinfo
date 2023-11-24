@@ -317,10 +317,11 @@ class DeconPage(Base):
     username = Column(String, primary_key=True, index=True)
     decons = relationship("Decon", back_populates="deconpage")
     
-class ApiSetting(Base):
-    __tablename__ = 'apisetting'
-    apiname = Column(String, primary_key=True, index=True)
-    updatedby = Column(String, primary_key=False, index=False, nullable=True)
+class ConfigSetting(Base):
+    __tablename__ = 'configsetting'
+    apiname = Column(String, primary_key=False, index=False, nullable=True)
+    metadatatag = Column(String, primary_key=False, index=False, nullable=True)
+    updatedby = Column(String, primary_key=True, index=True, nullable=False)
     updatedon = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.utcnow)
    
 

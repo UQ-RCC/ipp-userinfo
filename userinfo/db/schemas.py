@@ -156,10 +156,11 @@ class DeconPage(BaseModel):
         orm_mode = True
 
 ##################################
-### api setting
+### config setting
 ##################################
-class ApiSetting(BaseModel):
-    apiname: str
+class ConfigSetting(BaseModel):
+    apiname: str = 'Microvolution'
+    metadatatag: str = 'meta_23_002'
     updatedby: str
     updatedon: datetime
 

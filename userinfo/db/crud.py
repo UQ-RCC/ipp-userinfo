@@ -1035,34 +1035,39 @@ def create_macro_and_job(db: Session, username: str, email: str, macro_id:int, s
 
 ###Update api settings
 
-def get_api(db: Session):
-    return db.query(models.ApiSetting).\
-        filter(models.ApiSetting.apiname != None).\
-        filter(models.ApiSetting.updatedby != None).\
-        filter(models.ApiSetting.updatedon != None).\
+def get_config(db: Session):
+    return db.query(models.ConfigSetting).\
+        filter(models.ConfigSetting.apiname != None).\
+        filter(models.ConfigSetting.metadatatag != None).\
+        filter(models.ConfigSetting.updatedby != None).\
+        filter(models.ConfigSetting.updatedon != None).\
         first()
 
 
-def create_api_setting(db: Session, username: str, api:str):
+def create_config_setting(db: Session, username: str, api:str, metadata:str):
     # check if exists
-    db_api_setting =  models.ApiSetting(apiname = api, updatedby = username, updatedon = datetime.datetime.utcnow())
-    db.add(db_api_setting)
+    db_config_setting =  models.ConfigSetting(apiname = api, metadatatag= metadata, updatedby = username, updatedon = datetime.datetime.utcnow())
+    db.add(db_config_setting)
     db.flush()
     db.commit()
     
 
 
-def update_api_setting(db:Session, username: str, api:str):
-    current_api = get_api(db)
-    if not current_api:
-        create_api_setting(db,username,api)
+def update_config_setting(db:Session, username: str, api:str, metadata:str):
+    current_config = get_config(db)
+    
+    if not current_config:
+        create_config_setting(db,username,api,metadata)
     else:
-        current_api.apiname = api
-        current_api.username = username
-        current_api.updatedon = datetime.datetime.utcnow() 
+        
+        
+        current_config.apiname = api
+        current_config.metadatatag = metadata
+        current_config.updatedby = username
+        current_config.updatedon = datetime.datetime.utcnow() 
     
     db.commit()
-    return current_api
+    return current_config
 
 
 
