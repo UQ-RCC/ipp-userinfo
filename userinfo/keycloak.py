@@ -37,6 +37,7 @@ def decode(token: str = Depends(oauth2_scheme)):
         + "\n-----END PUBLIC KEY-----"
     )
     try:
+        logger.debug("Check keycloak token")
         logger.info(keycloak_openid.decode_token(
             token,
             key=KEYCLOAK_PUBLIC_KEY,
