@@ -4,8 +4,12 @@ from keycloak.realm import KeycloakRealm
 from keycloak.openid_connect import KeycloakOpenidConnect
 from fastapi import Depends, HTTPException
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_500_INTERNAL_SERVER_ERROR
-
+import logging, time
 from jose.exceptions import ExpiredSignatureError
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s [%(name)s] %(levelname)s : %(message)s')
+logger = logging.getLogger(__name__)
 
 realm = KeycloakRealm(
     server_url=config.get('keycloak', 'server_url'), 
@@ -33,6 +37,11 @@ def decode(token: str = Depends(oauth2_scheme)):
         + "\n-----END PUBLIC KEY-----"
     )
     try:
+        logger.info(keycloak_openid.decode_token(
+            token,
+            key=KEYCLOAK_PUBLIC_KEY,
+            options={"verify_signature": True, "verify_aud": False, "exp": True},
+        ))
         return keycloak_openid.decode_token(
             token,
             key=KEYCLOAK_PUBLIC_KEY,
