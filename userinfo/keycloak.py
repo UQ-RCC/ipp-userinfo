@@ -7,9 +7,8 @@ from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_500_INTERNAL_SERVER_ERR
 import logging, time
 from jose.exceptions import ExpiredSignatureError
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s [%(name)s] %(levelname)s : %(message)s')
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('ippuserinfo')
+logger.setLevel(logging.DEBUG)
 
 realm = KeycloakRealm(
     server_url=config.get('keycloak', 'server_url'), 
