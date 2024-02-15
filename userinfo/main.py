@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routers import user, job, fileexplorer, decon, version, converter, preprocessing, macro, configuration
 import userinfo.config as config
 from logging.handlers import TimedRotatingFileHandler
-
+import json
 
 logger = logging.getLogger('ippuserinfo')
 logger.setLevel(logging.DEBUG)
@@ -106,4 +106,16 @@ userinfoapi.include_router(
     responses={404: {"description": "Not found"}},
 )
 
+
+keycloakrealm: dict = keycloak.realm
+keycloak_openid: dict = keycloak.keycloak_openid
+oauth2_scheme: dict = keycloak.oauth2_scheme
+
+
 logger.info("Start ippuserinfo")
+logger.info("----Keycloak----")
+logger.info(vars(keycloakrealm))
+logger.info(vars(keycloak_openid))
+logger.info(vars(oauth2_scheme))
+logger.info("----Keycloak end----")
+

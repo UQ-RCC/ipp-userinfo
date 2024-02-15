@@ -7,8 +7,7 @@ from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_500_INTERNAL_SERVER_ERR
 import logging, time
 from jose.exceptions import ExpiredSignatureError
 
-logger = logging.getLogger('ippuserinfo')
-logger.setLevel(logging.DEBUG)
+
 
 realm = KeycloakRealm(
     server_url=config.get('keycloak', 'server_url'), 
@@ -36,12 +35,7 @@ def decode(token: str = Depends(oauth2_scheme)):
         + "\n-----END PUBLIC KEY-----"
     )
     try:
-        logger.debug("Check keycloak token")
-        logger.info(keycloak_openid.decode_token(
-            token,
-            key=KEYCLOAK_PUBLIC_KEY,
-            options={"verify_signature": True, "verify_aud": False, "exp": True},
-        ))
+        
         return keycloak_openid.decode_token(
             token,
             key=KEYCLOAK_PUBLIC_KEY,
