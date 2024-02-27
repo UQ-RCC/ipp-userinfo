@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 import base64
 import logging
+import userinfo.config as config
 
 logger = logging.getLogger('ippuserinfo')
 router = APIRouter()
@@ -185,7 +186,7 @@ def get_pincal_setting(illuminationType: str,
     logger.info(f"Inside get setting", exc_info=True)
     logger.info(f"Inside get setting, isglobal : {isglobal}", exc_info=True)
     if (isglobal):
-        username = "admin"
+        username = config.get('keycloak', 'admin')
     else:
         username = user.get('preferred_username')
             

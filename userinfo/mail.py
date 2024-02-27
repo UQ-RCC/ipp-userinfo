@@ -56,6 +56,7 @@ def send_email(from_address, to_address, ccemail, subject, contents, subtype, to
                 raise
     ### send the email
     try:
+        logger.error(f"Sender email: {from_address}", exc_info=True)
         email = EmailMessage()
         email['Subject'] = subject
         email['From'] = from_address
