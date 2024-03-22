@@ -61,7 +61,8 @@ def send_email(from_address, to_address, ccemail, subject, contents, subtype, to
         email['Subject'] = subject
         email['From'] = from_address
         if to_sender:
-            email['To'] = to_address+','+ from_address
+            email['To'] = to_address
+            email['Cc'] = from_address
         else:
             email['To'] = to_address
         if ccemail.strip() != "":
