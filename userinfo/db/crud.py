@@ -430,7 +430,7 @@ def get_job(db:Session, jobid: str):
 
 
 
-def create_decon_email_contents(finished_jobs, series, setting):
+def create_decon_email_contents(finished_jobs, series, setting,job_status):
     """
     Create html contents of the emails
     """
@@ -447,9 +447,9 @@ def create_decon_email_contents(finished_jobs, series, setting):
         <head></head>
         <body>
             <p>Dear Image Processing Portal user!<br />
-
-            <p>The { 'series' if series.isfolder else 'file' } <b>{ series.path }</b> has been processed! <p/>
-            <p>You can access the output at <a href="{output_access_url}">here</a></p>
+            
+            <p>The { 'series' if series.isfolder else 'file' } <b>{ series.path }</b> has been { 'failed!' if job_status=='FAILED' else 'processed!' }  <p/>
+            <p>You can access the output <a href="{output_access_url}">here</a></p>
             <p>The following jobs were created: <br />
             <table style="width:100%; border-collapse:collapse;">
                 <tr>
@@ -661,8 +661,11 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                     setting = db.query(models.Setting).filter(models.Setting.id == decon.setting_id).first()
                     logger.debug(f"Sending user email to {existing_job_dict.get('email')}")
                     # send email
-                    subject = 'Your decon jobs have finished!'
-                    contents = create_decon_email_contents(finished_jobs, series, setting)
+                    if (new_job_stat == 'FAILED'):
+                        subject = 'Your decon jobs have failed!'
+                    else:
+                        subject = 'Your decon jobs have finished!'
+                    contents = create_decon_email_contents(finished_jobs, series, setting, new_job_stat)
                 else:
                     sendEmail = False
             #### convert job
@@ -670,7 +673,11 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                 logger.debug(f"Convert job, convertid={convert_id}")
                 if sendEmail:
                     convert = db.query(models.Convert).filter(models.Convert.id == convert_id).first()
-                    subject = 'Your conversion job has finished!'
+                    #subject = 'Your conversion job has finished!'
+                    if (new_job_stat == 'FAILED'):
+                        subject = 'Your conversion job have failed!'
+                    else:
+                        subject = 'Your conversion job has finished!'
                     contents = create_convert_email_contents(existing_job_dict, convert, new_job_stat)
             #### preprocess job
             elif preprocessing_id and not convert_id and not decon_id and not macro_id:
@@ -682,14 +689,22 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                     for psetting in psettings:
                         _serie = db.query(models.Series).filter(models.Series.id == psetting.series_id).first()
                         psetting.path = _serie.path
-                    subject = 'Your preprocessing job has finished!'
+                    #subject = 'Your preprocessing job has finished!'
+                    if (new_job_stat == 'FAILED'):
+                        subject = 'Your preprocessing job have failed!'
+                    else:
+                        subject = 'Your preprocessing job has finished!'
                     contents = create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings, new_job_stat)
             #### macro job
             elif macro_id and not preprocessing_id and not convert_id and not decon_id:
                 logger.debug(f"Macro job, macro_id={macro_id}")
                 if sendEmail:
                     macro = db.query(models.Macro).filter(models.Macro.id == macro_id).first()
-                    subject = 'Your macro job has finished!'
+                    #subject = 'Your macro job has finished!'
+                    if (new_job_stat == 'FAILED'):
+                        subject = 'Your macro job have failed!'
+                    else:
+                        subject = 'Your macro job has finished!'
                     contents = create_macro_email_contents(existing_job_dict, macro, new_job_stat)
             if sendEmail:
                 try:
