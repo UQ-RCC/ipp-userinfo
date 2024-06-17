@@ -456,6 +456,7 @@ def create_decon_email_contents(finished_jobs, series, setting,job_status):
                     <th style="border: 1px solid black;">Job#</th>
                     <th style="border: 1px solid black;">Slurm Job#</th>
                     <th style="border: 1px solid black;">Name</th>
+                    <th style="border: 1px solid black;">Submitted</th>
                     <th style="border: 1px solid black;">Start</th> 
                     <th style="border: 1px solid black;">Finish</th>
                     <th style="border: 1px solid black;">Total files</th>
@@ -469,6 +470,7 @@ def create_decon_email_contents(finished_jobs, series, setting,job_status):
                                     <td style="border: 1px solid black;"> {job.id} </td>
                                     <td style="border: 1px solid black;"> {job.jobid} </td>
                                     <td style="border: 1px solid black;"> {job.jobname} </td>
+                                    <td style="border: 1px solid black;"> {job.submitted} </td>
                                     <td style="border: 1px solid black;"> {job.start} </td>
                                     <td style="border: 1px solid black;"> {job.end} </td>
                                     <td style="border: 1px solid black;"> {job.total} </td>
@@ -619,7 +621,9 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
         raise CannotChangeException('Cannot changed terminated job')        
     update_data = job.dict(exclude_unset=True)
     if update_data.get('status') in ('FAILED', 'COMPLETE'):
-        update_data['end'] = datetime.datetime.utcnow()
+        if update_data.get('end') is None:
+            update_data['end'] = datetime.datetime.now()
+        
     updated_item = stored_item_model.copy(update=update_data)
     db.query(models.Job).\
         filter(models.Job.id == jobid).\
@@ -1061,7 +1065,7 @@ def get_config(db: Session):
 
 def create_config_setting(db: Session, username: str, api:str, metadata:str):
     # check if exists
-    db_config_setting =  models.ConfigSetting(apiname = api, metadatatag= metadata, updatedby = username, updatedon = datetime.datetime.utcnow())
+    db_config_setting =  models.ConfigSetting(apiname = api, metadatatag= metadata, updatedby = username, updatedon = datetime.datetime.now())
     db.add(db_config_setting)
     db.flush()
     db.commit()
@@ -1079,7 +1083,7 @@ def update_config_setting(db:Session, username: str, api:str, metadata:str):
         current_config.apiname = api
         current_config.metadatatag = metadata
         current_config.updatedby = username
-        current_config.updatedon = datetime.datetime.utcnow() 
+        current_config.updatedon = datetime.datetime.now() 
     
     db.commit()
     return current_config

@@ -94,6 +94,7 @@ class JobBase(BaseModel):
     email: str = None
     jobid: Optional[int] = None
     jobname: Optional[str] = None
+    submitted: Optional[datetime] = None 
     start: Optional[datetime] = None 
     end: Optional[datetime] = None 
     status: str = 'SUBMITTED'

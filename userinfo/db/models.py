@@ -322,7 +322,7 @@ class ConfigSetting(Base):
     apiname = Column(String, primary_key=False, index=False, nullable=True)
     metadatatag = Column(String, primary_key=False, index=False, nullable=True)
     updatedby = Column(String, primary_key=True, index=True, nullable=False)
-    updatedon = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.utcnow)
+    updatedon = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.now())
    
 
 
@@ -434,7 +434,8 @@ class Job(Base):
     # job data
     jobid = Column(Integer, primary_key=False, index=False, nullable=True)
     jobname = Column(String, primary_key=False, index=False, nullable=True)
-    start =  Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.utcnow)
+    submitted =  Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.now())
+    start =  Column(DateTime, primary_key=False, index=False, nullable=False)
     end =  Column(DateTime, primary_key=False, index=False, nullable=True)
     status = Column(String, primary_key=False, index=False, nullable=False, default='SUBMITTED')
     ## total number of files to cruch
