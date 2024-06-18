@@ -267,7 +267,7 @@ def create_decon_and_jobs(db:Session, username: str, email: str, decon_id: int, 
     created_jobs = []
     for i in range(numberofjobs):
         db_job = models.Job(id=shortuuid.uuid(), username = username, 
-                            email=email, decon_id = db_decon.id)
+                            email=email, decon_id = db_decon.id, submitted=datetime.datetime.now(pytz.timezone('Australia/Brisbane')) )
         db.add(db_job)
         db.flush()
         # db.refresh(db_job)
