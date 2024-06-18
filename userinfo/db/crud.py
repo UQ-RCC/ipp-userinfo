@@ -5,7 +5,7 @@ from urllib.parse import quote
 from . import models, schemas
 from typing import List
 import shortuuid, enum, datetime
-import pytz
+from datetime import timezone
 
 import userinfo.mail as mail
 import userinfo.config as config
@@ -267,7 +267,7 @@ def create_decon_and_jobs(db:Session, username: str, email: str, decon_id: int, 
     created_jobs = []
     for i in range(numberofjobs):
         db_job = models.Job(id=shortuuid.uuid(), username = username, 
-                            email=email, decon_id = db_decon.id, submitted=datetime.datetime.now(pytz.timezone('Australia/Brisbane')) )
+                            email=email, decon_id = db_decon.id, submitted=datetime.datetime.utcnow())
         db.add(db_job)
         db.flush()
         # db.refresh(db_job)
@@ -627,7 +627,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     update_data = job.dict(exclude_unset=True)
     if update_data.get('status') in ('FAILED', 'COMPLETE'):
         if update_data.get('end') is None:
-            update_data['end'] = datetime.datetime.now(pytz.timezone('Australia/Brisbane'))
+            update_data['end'] = datetime.datetime.utcnow()
         
     updated_item = stored_item_model.copy(update=update_data)
     db.query(models.Job).\
@@ -1070,7 +1070,7 @@ def get_config(db: Session):
 
 def create_config_setting(db: Session, username: str, api:str, metadata:str):
     # check if exists
-    db_config_setting =  models.ConfigSetting(apiname = api, metadatatag= metadata, updatedby = username, updatedon = datetime.datetime.now(pytz.timezone('Australia/Brisbane')))
+    db_config_setting =  models.ConfigSetting(apiname = api, metadatatag= metadata, updatedby = username, updatedon = datetime.datetime.utcnow())
     db.add(db_config_setting)
     db.flush()
     db.commit()
@@ -1088,7 +1088,7 @@ def update_config_setting(db:Session, username: str, api:str, metadata:str):
         current_config.apiname = api
         current_config.metadatatag = metadata
         current_config.updatedby = username
-        current_config.updatedon = datetime.datetime.now(pytz.timezone('Australia/Brisbane')) 
+        current_config.updatedon = datetime.datetime.utcnow() 
     
     db.commit()
     return current_config

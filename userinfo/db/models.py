@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy_json import mutable_json_type
 from sqlalchemy import PickleType
+from datetime import timezone
 
 from sqlalchemy.dialects.postgresql import JSONB
 # from sqlalchemy_json import NestedMutable, MutableDict
@@ -323,7 +324,7 @@ class ConfigSetting(Base):
     apiname = Column(String, primary_key=False, index=False, nullable=True)
     metadatatag = Column(String, primary_key=False, index=False, nullable=True)
     updatedby = Column(String, primary_key=True, index=True, nullable=False)
-    updatedon = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.now(pytz.timezone('Australia/Brisbane')))
+    updatedon = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.utcnow())
    
 
 
@@ -435,7 +436,7 @@ class Job(Base):
     # job data
     jobid = Column(Integer, primary_key=False, index=False, nullable=True)
     jobname = Column(String, primary_key=False, index=False, nullable=True)
-    submitted =  Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.now(pytz.timezone('Australia/Brisbane')))
+    submitted =  Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.utcnow())
     start =  Column(DateTime, primary_key=False, index=False, nullable=False)
     end =  Column(DateTime, primary_key=False, index=False, nullable=True)
     status = Column(String, primary_key=False, index=False, nullable=False, default='SUBMITTED')
