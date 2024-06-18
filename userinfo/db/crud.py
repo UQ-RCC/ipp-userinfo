@@ -5,11 +5,13 @@ from urllib.parse import quote
 from . import models, schemas
 from typing import List
 import shortuuid, enum, datetime
+import pytz
 
 import userinfo.mail as mail
 import userinfo.config as config
 import logging
 logger = logging.getLogger('ippuserinfo')
+
 
 class PermissionException(Exception):
     pass
@@ -625,7 +627,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     update_data = job.dict(exclude_unset=True)
     if update_data.get('status') in ('FAILED', 'COMPLETE'):
         if update_data.get('end') is None:
-            update_data['end'] = datetime.datetime.now()
+            update_data['end'] = datetime.datetime.now(pytz.timezone('Australia/Brisbane'))
         
     updated_item = stored_item_model.copy(update=update_data)
     db.query(models.Job).\
@@ -1068,7 +1070,7 @@ def get_config(db: Session):
 
 def create_config_setting(db: Session, username: str, api:str, metadata:str):
     # check if exists
-    db_config_setting =  models.ConfigSetting(apiname = api, metadatatag= metadata, updatedby = username, updatedon = datetime.datetime.now())
+    db_config_setting =  models.ConfigSetting(apiname = api, metadatatag= metadata, updatedby = username, updatedon = datetime.datetime.now(pytz.timezone('Australia/Brisbane')))
     db.add(db_config_setting)
     db.flush()
     db.commit()
@@ -1086,7 +1088,7 @@ def update_config_setting(db:Session, username: str, api:str, metadata:str):
         current_config.apiname = api
         current_config.metadatatag = metadata
         current_config.updatedby = username
-        current_config.updatedon = datetime.datetime.now() 
+        current_config.updatedon = datetime.datetime.now(pytz.timezone('Australia/Brisbane')) 
     
     db.commit()
     return current_config

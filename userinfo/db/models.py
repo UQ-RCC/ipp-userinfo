@@ -12,6 +12,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 import shortuuid
 
 from .database import Base
+import pytz
 
 class FilesExplorer(Base):
     __tablename__ = 'filesexplorers'
@@ -322,7 +323,7 @@ class ConfigSetting(Base):
     apiname = Column(String, primary_key=False, index=False, nullable=True)
     metadatatag = Column(String, primary_key=False, index=False, nullable=True)
     updatedby = Column(String, primary_key=True, index=True, nullable=False)
-    updatedon = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.now())
+    updatedon = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.now(pytz.timezone('Australia/Brisbane')))
    
 
 
@@ -434,7 +435,7 @@ class Job(Base):
     # job data
     jobid = Column(Integer, primary_key=False, index=False, nullable=True)
     jobname = Column(String, primary_key=False, index=False, nullable=True)
-    submitted =  Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.now())
+    submitted =  Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.now(pytz.timezone('Australia/Brisbane')))
     start =  Column(DateTime, primary_key=False, index=False, nullable=False)
     end =  Column(DateTime, primary_key=False, index=False, nullable=True)
     status = Column(String, primary_key=False, index=False, nullable=False, default='SUBMITTED')
