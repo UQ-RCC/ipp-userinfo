@@ -441,7 +441,10 @@ def create_decon_email_contents(finished_jobs, series, setting,job_status):
         _job_output_path = "/"
     if not _job_output_path.endswith('/'):
         _job_output_path = _job_output_path + '/'
+    logger.debug(f"clinet uri:{config.get('client', 'uri')}")
+    logger.info(f"Email details: {quote(_job_output_path)}")
     output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(_job_output_path)
+    logger.info(f"Email details: {output_access_url}")
     contents = f"""
     <html>
         <head></head>
