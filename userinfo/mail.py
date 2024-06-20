@@ -30,6 +30,8 @@ def connect_smtp():
     username, passwd = config.get('email', 'username'), config.get('email', 'password')
     if username and passwd:
         connection.ehlo()
+        logger.debug(f"connection user: {username}", exc_info=True)
+        logger.debug(f"connection password: {passwd}", exc_info=True)
         connection.login(username, passwd)
     return connection
 
@@ -57,6 +59,7 @@ def send_email(from_address, to_address, ccemail, subject, contents, subtype, to
     ### send the email
     try:
         logger.error(f"Sender email: {from_address}", exc_info=True)
+        logger.debug(f"To email email: {to_address}", exc_info=True)
         email = EmailMessage()
         email['Subject'] = subject
         email['From'] = from_address
