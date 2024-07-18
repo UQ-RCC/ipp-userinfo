@@ -5,11 +5,13 @@ from urllib.parse import quote
 from . import models, schemas
 from typing import List
 import shortuuid, enum, datetime
-from datetime import timezone
+
+import time
 
 import userinfo.mail as mail
 import userinfo.config as config
 import logging
+import pytz
 logger = logging.getLogger('ippuserinfo')
 
 
@@ -447,6 +449,7 @@ def create_decon_email_contents(finished_jobs, series, setting,job_status):
     logger.info(f"Email details: {quote(_job_output_path)}")
     output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(_job_output_path)
     logger.info(f"Email details: {output_access_url}")
+    
     contents = f"""
     <html>
         <head></head>
@@ -470,12 +473,20 @@ def create_decon_email_contents(finished_jobs, series, setting,job_status):
                 </tr>
             """
     for job in finished_jobs:
+        submitted_utc_str = datetime.strptime(job.submitted, "%Y-%m-%d %H:%M:%S.%f")
+        utc_zone = pytz.utc
+        utc_time = utc_zone.localize(submitted_utc_str)
+        local_tz = pytz.timezone('Australia/Brisbane')
+        local_submitted_time = utc_time.astimezone(local_tz)
+
+        
+
         contents = contents + f"""
                                 <tr>
                                     <td style="border: 1px solid black;"> {job.id} </td>
                                     <td style="border: 1px solid black;"> {job.jobid} </td>
                                     <td style="border: 1px solid black;"> {job.jobname} </td>
-                                    <td style="border: 1px solid black;"> {job.submitted} </td>
+                                    <td style="border: 1px solid black;"> {local_submitted_time} </td>
                                     <td style="border: 1px solid black;"> {job.start} </td>
                                     <td style="border: 1px solid black;"> {job.end} </td>
                                     <td style="border: 1px solid black;"> {job.total} </td>
