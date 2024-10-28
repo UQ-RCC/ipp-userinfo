@@ -1,5 +1,5 @@
 import enum, datetime
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Enum, DateTime, Interval
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Enum, DateTime, Interval,func
 from sqlalchemy.orm import relationship
 
 from sqlalchemy.ext.mutable import MutableList
@@ -324,7 +324,7 @@ class ConfigSetting(Base):
     apiname = Column(String, primary_key=False, index=False, nullable=True)
     metadatatag = Column(String, primary_key=False, index=False, nullable=True)
     updatedby = Column(String, primary_key=True, index=True, nullable=False)
-    updatedon = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.utcnow())
+    updatedon = Column(DateTime(timezone=True), primary_key=False, index=False, nullable=True, default=func.timezone('UTC', func.now()), onupdate=func.timezone('UTC', func.now()))
    
 
 
@@ -436,8 +436,8 @@ class Job(Base):
     # job data
     jobid = Column(Integer, primary_key=False, index=False, nullable=True)
     jobname = Column(String, primary_key=False, index=False, nullable=True)
-    submitted =  Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.utcnow())
-    start =  Column(DateTime, primary_key=False, index=False, nullable=False)
+    submitted =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, server_default=func.timezone('UTC', func.now()))
+    start =  Column(DateTime, primary_key=False, index=False, nullable=True )
     end =  Column(DateTime, primary_key=False, index=False, nullable=True)
     status = Column(String, primary_key=False, index=False, nullable=False, default='SUBMITTED')
     ## total number of files to cruch

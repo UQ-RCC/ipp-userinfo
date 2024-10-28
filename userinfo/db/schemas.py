@@ -94,8 +94,8 @@ class JobBase(BaseModel):
     email: str = None
     jobid: Optional[int] = None
     jobname: Optional[str] = None
-    submitted: Optional[datetime] = None 
-    start: Optional[datetime] = None 
+    submitted: Optional[datetime] 
+    start: Optional[datetime] 
     end: Optional[datetime] = None 
     status: str = 'SUBMITTED'
     total: Optional[int] = None
@@ -163,7 +163,7 @@ class ConfigSetting(BaseModel):
     apiname: str = 'Microvolution'
     metadatatag: str = 'meta_23_002'
     updatedby: str
-    updatedon: datetime
+    updatedon: Optional[datetime]
 
     class Config:
         orm_mode = True

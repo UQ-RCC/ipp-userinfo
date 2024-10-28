@@ -269,7 +269,7 @@ def create_decon_and_jobs(db:Session, username: str, email: str, decon_id: int, 
     created_jobs = []
     for i in range(numberofjobs):
         db_job = models.Job(id=shortuuid.uuid(), username = username, 
-                            email=email, decon_id = db_decon.id, submitted=datetime.datetime.utcnow())
+                            email=email, decon_id = db_decon.id)
         db.add(db_job)
         db.flush()
         # db.refresh(db_job)
@@ -1081,7 +1081,7 @@ def get_config(db: Session):
 
 def create_config_setting(db: Session, username: str, api:str, metadata:str):
     # check if exists
-    db_config_setting =  models.ConfigSetting(apiname = api, metadatatag= metadata, updatedby = username, updatedon = datetime.datetime.utcnow())
+    db_config_setting =  models.ConfigSetting(apiname = api, metadatatag= metadata, updatedby = username)
     db.add(db_config_setting)
     db.flush()
     db.commit()
@@ -1099,7 +1099,7 @@ def update_config_setting(db:Session, username: str, api:str, metadata:str):
         current_config.apiname = api
         current_config.metadatatag = metadata
         current_config.updatedby = username
-        current_config.updatedon = datetime.datetime.utcnow() 
+       #current_config.updatedon = datetime.datetime.utcnow() 
     
     db.commit()
     return current_config
