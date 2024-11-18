@@ -473,14 +473,8 @@ def create_decon_email_contents(finished_jobs, series, setting,job_status):
                 </tr>
             """
     for job in finished_jobs:
-        
-        utc_zone = pytz.utc
-        utc_time = utc_zone.localize(job.submitted)
-        local_tz = pytz.timezone('Australia/Brisbane')
-        local_submitted_time = utc_time.astimezone(local_tz)
-
-        
-
+        local_submitted_time = (job.submitted).astimezone(pytz.timezone('Australia/Brisbane'))
+    
         contents = contents + f"""
                                 <tr>
                                     <td style="border: 1px solid black;"> {job.id} </td>
