@@ -14,8 +14,8 @@ logger = logging.getLogger('ippuserinfo')
 @router.get("")
 def get_jobs(   status: Optional[str] = None, 
                 username: Optional[str] = None, 
-                start: Optional[datetime.date] = None,
                 jobname: Optional[str] = None,
+                submit: Optional[datetime.date] = None,
                 user: dict = Depends(keycloak.decode), 
                 db: Session = Depends(udb.get_db)):
     logger.debug("Querying jobs")
@@ -24,7 +24,7 @@ def get_jobs(   status: Optional[str] = None,
     admin = config.get('keycloak', 'admin')
     if not realm_access or not admin in realm_access.get('roles'):
         return HTTPException(status_code=401, detail="Only admins can list jobs")
-    return udb.crud.filter_jobs(db, status, username, start, jobname)
+    return udb.crud.filter_jobs(db, status, username, jobname, submit)
 
 
 @router.get("/{jobid}", response_model=udb.schemas.Job)
