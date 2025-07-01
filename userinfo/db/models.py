@@ -382,6 +382,16 @@ class PreprocessingPage(Base):
     username = Column(String, primary_key=True, index=True)
     preprocessing = relationship("Preprocessing", uselist=False, back_populates="preprocessingpage")
 
+##### web resources ##########
+
+class Resources(Base):
+    __tablename__ = 'resources' 
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, primary_key=False, unique=False, index=False, nullable=True)
+    link = Column(String, primary_key=False, unique=False, index=False, nullable=True)
+    active = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
+    username = Column(String, primary_key=False, unique=False, index=False, nullable=True)
+
 ##### macro ##################################
 
 class Macro(Base):

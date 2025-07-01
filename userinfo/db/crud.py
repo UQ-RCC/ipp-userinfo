@@ -1107,5 +1107,46 @@ def update_config_setting(db:Session, username: str, api:str, metadata:str):
     db.commit()
     return current_config
 
+def get_resources(db: Session):
+    return db.query(models.Resources).\
+    filter(models.Resources.link != None).\
+    filter(models.Resources.title != None).\
+    filter(models.Resources.active == True).\
+    all()
+
+def create_resource(db: Session, username: str, payload: schemas.ResourcesCreate):
+    logger.debug(f"New resource{payload}")
+    resource = models.Resources(title= payload.title, link= payload.link, active=True, username = username )
+    db.add(resource)
+    db.commit()
+    db.flush()
+    logger.debug(f"New resource{resource}")
+    return resource
 
 
+def get_a_resource(db: Session, record_id: int):
+    return db.query(models.Resources).\
+            filter(models.Resources.id == record_id).\
+            first()
+
+def update_resource(db: Session, username: str, record_id: int, payload: schemas.ResourcesCreate ):
+    a_resource = get_a_resource(db, record_id)
+    logger.debug(f"update a  resource{a_resource}")
+    logger.debug(f"username resource    {username}")
+    if a_resource == None:
+        raise NotfoundException(f"Cannot find record with id={record_id}")
+    a_resource.link = payload.link
+    a_resource.title = payload.title
+    a_resource.active = True
+    a_resource.username = username
+    db.commit()
+
+def delete_resource(db: Session, username: str, record_id: int):
+    a_resource = get_a_resource(db, record_id)
+    logger.debug(f"update a  resource{a_resource}")
+    if a_resource:
+        a_resource.active = False
+        a_resource.username = username
+        db.commit()
+        db.refresh(a_resource)
+    return a_resource

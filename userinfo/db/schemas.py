@@ -410,3 +410,23 @@ class Macro(MacroBase):
     job: Job = None
     class Config:
         orm_mode = True
+
+#################################
+###Resources
+#################################
+class ResourcesBase(BaseModel):
+    title: Optional[str] = None
+    link: Optional[str] = None
+    active = bool = True
+    username: Optional[str] = None
+
+
+class ResourcesCreate(ResourcesBase):
+    pass
+
+
+class Resources(ResourcesBase):
+    id: int
+
+    class Config:
+        orm_mode = True

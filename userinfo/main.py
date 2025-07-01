@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import user, job, fileexplorer, decon, version, converter, preprocessing, macro, configuration
+from .routers import user, job, fileexplorer, decon, version, converter, preprocessing, macro, configuration, resources
 import userinfo.config as config
 from logging.handlers import TimedRotatingFileHandler
 import json
@@ -103,6 +103,13 @@ userinfoapi.include_router(
     configuration.router,
     prefix="/preferences", 
     tags=["configuration"], 
+    responses={404: {"description": "Not found"}},
+)
+# resources page
+userinfoapi.include_router(
+    resources.router,
+    prefix="/preferences", 
+    tags=["resources"], 
     responses={404: {"description": "Not found"}},
 )
 
