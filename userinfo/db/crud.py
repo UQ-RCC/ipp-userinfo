@@ -482,7 +482,9 @@ def create_decon_email_contents(finished_jobs, series, setting,job_status):
                 </tr>
             """
     for job in finished_jobs:
-        local_submitted_time = (job.submitted).astimezone(pytz.timezone('Australia/Brisbane'))
+        local_submitted_time = (job.submitted).astimezone()
+        local_start_time = (job.start).astimezone()
+        local_end_time = (job.end).astimezone()
     
         contents = contents + f"""
                                 <tr>
@@ -490,8 +492,8 @@ def create_decon_email_contents(finished_jobs, series, setting,job_status):
                                     <td style="border: 1px solid black;"> {job.jobid} </td>
                                     <td style="border: 1px solid black;"> {job.jobname} </td>
                                     <td style="border: 1px solid black;"> {local_submitted_time} </td>
-                                    <td style="border: 1px solid black;"> {job.start} </td>
-                                    <td style="border: 1px solid black;"> {job.end} </td>
+                                    <td style="border: 1px solid black;"> {local_start_time} </td>
+                                    <td style="border: 1px solid black;"> {local_end_time} </td>
                                     <td style="border: 1px solid black;"> {job.total} </td>
                                     <td style="border: 1px solid black;"> {job.success} </td>
                                     <td style="border: 1px solid black;"> {job.fail} </td>
