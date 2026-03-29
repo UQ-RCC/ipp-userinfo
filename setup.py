@@ -14,7 +14,7 @@ setup(
     # ],
     zip_safe=False,
     install_requires=[
-            "fastapi==0.65.2",
+            "fastapi==0.109.1",
             "uvicorn==0.12.2",
             "python-keycloak-client==0.2.3",
             "cowsay==3.0",
