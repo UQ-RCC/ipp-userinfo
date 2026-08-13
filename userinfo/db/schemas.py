@@ -108,6 +108,7 @@ class JobBase(BaseModel):
     decon_id: Optional[int] = None
     convert_id: Optional[int] = None
     macro_id: Optional[int] = None
+    tera_id:Optional[int] = None
     preprocessing_id: Optional[int] = None
     sendemail: bool = True
 
@@ -408,6 +409,76 @@ class MacroCreate(MacroBase):
 class Macro(MacroBase):
     id: int
     job: Job = None
+    class Config:
+        orm_mode = True
+
+#################################
+###Terastitcher
+#################################
+class TerastitcherBase(BaseModel):
+    outputPath: Optional[str] = None
+    xmlPath: Optional[str] = None
+    volumePath: Optional[str] = None
+    username: Optional[str] = None
+    import_regex: Optional[str] = None
+    import_io: Optional[str] = None
+    import_volFormat: Optional[str] = None
+    import_scanAll: Optional[bool] = None
+    import_sparseData: Optional[bool] = None
+    import_firstaxis: Optional[str] = None
+    import_secondaxis: Optional[str] = None
+    import_thirdaxis: Optional[str] = None
+    import_voxel1 : Optional[float] = None
+    import_voxel2 : Optional[float] = None
+    import_voxel3 : Optional[float] = None
+    align_algo: Optional[str] = None
+    align_slicespl: Optional[str] = None
+    align_channel: Optional[str] = None
+    align_overlapX : Optional[float] = None
+    align_overlapY : Optional[float] = None
+    align_searchX : Optional[float] = None
+    align_searchY : Optional[float] = None
+    align_searchZ : Optional[float] = None
+    align_spim : Optional[bool] = None
+    align_subsetColfrom: Optional[int] = None
+    align_subsetColto: Optional[int] = None
+    align_subsetRowfrom: Optional[int] = None
+    align_subsetRowto: Optional[int] = None
+    align_subsetSlifrom: Optional[int] = None
+    align_subsetSlito: Optional[int] = None
+    isfolder: Optional[bool] = None
+    place_algo: Optional[str] = None
+    project_displacements: Optional[int] = None
+    project_ppdisplacements: Optional[int] = None
+    place_ppdisplacement: Optional[int] = None
+    thrs_reliabilitythres : Optional[float] = None
+    thrs_ppdisplacement : Optional[float] = None
+    thrs_rlbdisplacements : Optional[str] = None
+    thrs_stichstacks: Optional[str] = None
+    merge_artifactrmv: Optional[str] = None
+    merge_bigtiff : Optional[str] = None
+    merge_blend: Optional[str] = None
+    merge_channel: Optional[str] = None
+    merge_formats: Optional[str] = None
+    merge_isotropic: Optional[str] = None
+    merge_uncompressed : Optional[bool] = None
+    step: int = 1
+    selected: bool = False
+    visitedSteps: List[int] = []
+
+    ### devices
+    instances : Optional[int] = None
+    mem : Optional[float] = None
+    gpus : Optional[int] = None   
+    walltime : Optional[int] = None   
+    
+    
+class TerastitcherCreate(TerastitcherBase):
+    pass
+
+class Terastitcher(TerastitcherBase):
+    id: int
+    job: Optional[Job] = None
     class Config:
         orm_mode = True
 

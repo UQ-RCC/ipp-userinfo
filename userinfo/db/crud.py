@@ -1,6 +1,6 @@
 import base64
 from sqlalchemy.orm import Session
-from sqlalchemy import inspect, func, case
+from sqlalchemy import inspect, func, case, or_
 from urllib.parse import quote
 from . import models, schemas
 from typing import List
@@ -630,6 +630,40 @@ def create_macro_email_contents(existing_job_dict, macro, new_job_status):
     return contents
 
 
+def create_tera_email_contents(existing_job_dict, terastitcher, new_job_status):
+    """
+    Create html contents of the emails
+    """
+    if not terastitcher.outputPath:
+        terastitcher.outputPath = "/"
+    if not terastitcher.outputPath.endswith('/'):
+        terastitcher.outputPath = terastitcher.outputPath + '/'
+    output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(terastitcher.outputPath)
+    contents = f"""
+    <html>
+        <head></head>
+        <body>
+            <p>Dear Image Processing Portal user!<br />
+            Your recent terastitcher job has finished. <br />
+            Job information:<br />
+            <ul> 
+            <li>Job status: {new_job_status} </li>
+            <li>System job id: {existing_job_dict.get('id')} </li>
+            <li>Slurm job id : {existing_job_dict.get('jobid')} </li>
+            <li>Output folder: <a href="{output_access_url}">{terastitcher.outputPath}</a></li> <br />
+            
+            <p> The following files/series were processed: <br />
+            <ul>"""
+    if not terastitcher.isfolder:
+        contents = f"{contents}<li>{terastitcher.xmlPath}</li>"
+    else:
+         contents = f"{contents}<li>{terastitcher.volumePath}</li>"   
+
+    contents = f"{contents}</ul><br />"
+    contents = f"{contents} Best Regards,"
+    return contents
+
+
 def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     logger.debug(f"Updating jobid: {jobid}")
     existing_job = get_job(db, jobid)
@@ -661,6 +695,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
             preprocessing_id = existing_job_dict.get('preprocessing_id')
             convert_id = existing_job_dict.get('convert_id')
             macro_id = existing_job_dict.get('macro_id')
+            tera_id= existing_job_dict.get('tera_id')
             sendEmail = existing_job_dict.get('sendemail')
             email = existing_job_dict.get('email')
             subject = contents = ''
@@ -668,7 +703,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
             logger.info(f"Email details: {email}")
 
             ######## decon job
-            if not preprocessing_id and not convert_id and not macro_id and decon_id: 
+            if not preprocessing_id and not convert_id and not macro_id and not tera_id and decon_id: 
                 logger.debug(f"decon job, deconid={decon_id}")
                 total_jobs = db.query(models.Job).filter(models.Job.decon_id == decon_id).all()
                 # meaning a new job is done/or failed
@@ -694,7 +729,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                 else:
                     sendEmail = False
             #### convert job
-            elif not preprocessing_id and convert_id and not decon_id and not macro_id:
+            elif not preprocessing_id and convert_id and not decon_id and not macro_id and not tera_id:
                 logger.debug(f"Convert job, convertid={convert_id}")
                 if sendEmail:
                     convert = db.query(models.Convert).filter(models.Convert.id == convert_id).first()
@@ -705,7 +740,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                         subject = 'Your conversion job has finished!'
                     contents = create_convert_email_contents(existing_job_dict, convert, new_job_stat)
             #### preprocess job
-            elif preprocessing_id and not convert_id and not decon_id and not macro_id:
+            elif preprocessing_id and not convert_id and not decon_id and not macro_id and not tera_id:
                 logger.debug(f"Preprocessing job - preprocessingid={preprocessing_id}")
                 if sendEmail:
                     preprocessing = db.query(models.Preprocessing).filter(models.Preprocessing.id == preprocessing_id).first()
@@ -721,7 +756,7 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                         subject = 'Your preprocessing job has finished!'
                     contents = create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings, new_job_stat)
             #### macro job
-            elif macro_id and not preprocessing_id and not convert_id and not decon_id:
+            elif macro_id and not preprocessing_id and not convert_id and not decon_id and not tera_id:
                 logger.debug(f"Macro job, macro_id={macro_id}")
                 if sendEmail:
                     macro = db.query(models.Macro).filter(models.Macro.id == macro_id).first()
@@ -731,6 +766,17 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
                     else:
                         subject = 'Your macro job has finished!'
                     contents = create_macro_email_contents(existing_job_dict, macro, new_job_stat)
+            #### tera job
+            elif tera_id and not preprocessing_id and not convert_id and not decon_id and not macro_id :
+                logger.debug(f"Terastitcher job, tera_id={tera_id}")
+                if sendEmail:
+                    terastitcher = db.query(models.Terastitcher).filter(models.Terastitcher.id == tera_id).first()
+                    #subject = 'Your tera job has finished!'
+                    if (new_job_stat == 'FAILED'):
+                        subject = 'Your terastitcher job have failed!'
+                    else:
+                        subject = 'Your terastitcher job has finished!'
+                    contents = create_tera_email_contents(existing_job_dict, terastitcher, new_job_stat)
             if sendEmail:
                 try:
                     mail.send_mail(email, subject, contents)
@@ -1021,6 +1067,7 @@ def update_psetting(db: Session, username: str, psetting_id: int, psetting: sche
 def get_macro(db: Session, username: str):
     return db.query(models.Macro).\
             filter(models.Macro.username == username).\
+            order_by(models.Macro.id.desc()).\
             first()
 
 def create_new_macro(db: Session, username: str, payload: schemas.MacroCreate):
@@ -1072,6 +1119,92 @@ def create_macro_and_job(db: Session, username: str, email: str, macro_id:int, s
     db.flush()
     db.commit()
     return job
+
+### terastitcher
+
+def get_tera(db: Session, username: str, path: str = None):
+    query = db.query(models.Terastitcher).\
+            filter(models.Terastitcher.username == username)
+    if path:
+        decoded_path = base64.b64decode(path).decode("utf-8")
+        query = query.filter(
+            or_(
+                models.Terastitcher.xmlPath == decoded_path,
+                models.Terastitcher.volumePath == decoded_path
+            )
+        )
+    return query.order_by(models.Terastitcher.id.desc()).first()
+
+def create_new_terastitcher(db: Session, username: str, payload: schemas.TerastitcherCreate):
+    teraRecord = models.Terastitcher(**payload.dict())
+    teraRecord.username = username
+    db.add(teraRecord)
+    db.commit()
+    db.flush()
+    return teraRecord
+
+def update_terastitcher(db: Session, username: str, tera_id: int, payload: schemas.TerastitcherCreate ):
+    a_teraRecord = get_a_teraRecord(db, username, tera_id)
+    if a_teraRecord == None:
+        raise NotfoundException(f"Cannot find terastitcher with id={tera_id}")
+    for key, value in payload.dict(exclude_unset=True).items():
+        setattr(a_teraRecord, key, value)
+
+    db.commit()
+    db.refresh(a_teraRecord)    
+
+    
+
+# get a terastitcher
+def get_a_teraRecord(db: Session, username: str, tera_id: int):
+    return db.query(models.Terastitcher).\
+            filter(models.Terastitcher.id == tera_id).\
+            filter(models.Terastitcher.username == username).\
+            first()
+
+
+
+""" def create_tera_and_job(db: Session, username: str, email: str, tera_id:int, sendemail: bool):
+    terastitcher = get_a_teraRecord(db, username, tera_id)
+    logger.debug(f"terastitcher {terastitcher}")
+    if not terastitcher: 
+        raise NotfoundException(f"Cannot find terastitcher with id={tera_id}")
+    #create new terastitcher for the job first
+    db_terastitcher = models.Terastitcher(**terastitcher) 
+    db.add(db_terastitcher)
+    db.flush()
+    #now create job
+    job = models.Job(id=shortuuid.uuid(), username=username, email=email, decon_id=None, convert_id=None, preprocessing_id=None, macro_id=None, tera_id=db_terastitcher.id, sendemail=sendemail )
+    db.add(job)
+    db.flush()
+    db.commit()
+    return job """
+
+def create_tera_and_job(db: Session, username: str, email: str, tera_id: int, sendemail: bool):
+    terastitcher = get_a_teraRecord(db, username, tera_id)
+    if not terastitcher:
+        raise NotfoundException(f"Cannot find terastitcher with id={tera_id}")
+
+    # clone the existing Terastitcher record into a new row for this job
+    tera_data = {
+        c.name: getattr(terastitcher, c.name)
+        for c in terastitcher.__table__.columns
+        if c.name != "id"  # exclude PK so a new row is inserted
+    }
+    db_terastitcher = models.Terastitcher(**tera_data)
+    db.add(db_terastitcher)
+    db.flush()
+
+    job = models.Job(id=shortuuid.uuid(), username=username, email=email,
+                      decon_id=None, convert_id=None, preprocessing_id=None,
+                      macro_id=None, tera_id=db_terastitcher.id, sendemail=sendemail)
+    db.add(job)
+    db.flush()
+    db.commit()
+    return job
+
+
+
 
 ###Update api settings
 

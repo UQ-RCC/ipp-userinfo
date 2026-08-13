@@ -408,6 +408,72 @@ class Macro(Base):
     ## job
     job = relationship("Job", uselist=False, back_populates="macro")
 
+class Terastitcher(Base):
+    __tablename__ = 'terastitcher'
+    id = Column(Integer, primary_key=True, index=True)
+    outputPath = Column(String, primary_key=False, unique=False, index=False, nullable=True)
+    xmlPath = Column(String, primary_key=False, unique=False, index=False, nullable=True)
+    volumePath = Column(String, primary_key=False, unique=False, index=False, nullable=True)
+    username = Column(String, primary_key=False, unique=False, index=False, nullable=True)
+    import_regex = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    import_io = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    import_volFormat = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    import_scanAll = Column(Boolean,primary_key=False, unique=False, index=False, nullable=True)
+    import_sparseData = Column(Boolean,primary_key=False, unique=False, index=False, nullable=True)
+    import_firstaxis = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    import_secondaxis = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    import_thirdaxis = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    import_voxel1 = Column(Float,primary_key=False, unique=False, index=False, nullable=True)
+    import_voxel2 = Column(Float,primary_key=False, unique=False, index=False, nullable=True)
+    import_voxel3 = Column(Float,primary_key=False, unique=False, index=False, nullable=True)
+    align_algo = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    align_slicespl = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    align_channel = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    align_overlapX = Column(Float,primary_key=False, unique=False, index=False, nullable=True)
+    align_overlapY = Column(Float,primary_key=False, unique=False, index=False, nullable=True)
+    align_searchX = Column(Float,primary_key=False, unique=False, index=False, nullable=True)
+    align_searchY = Column(Float,primary_key=False, unique=False, index=False, nullable=True)
+    align_searchZ = Column(Float,primary_key=False, unique=False, index=False, nullable=True)
+    align_spim = Column(Boolean,primary_key=False, unique=False, index=False, nullable=True)
+    align_subsetColfrom = Column(Integer,primary_key=False, unique=False, index=False, nullable=True)
+    align_subsetColto = Column(Integer,primary_key=False, unique=False, index=False, nullable=True)
+    align_subsetRowfrom = Column(Integer,primary_key=False, unique=False, index=False, nullable=True)
+    align_subsetRowto = Column(Integer,primary_key=False, unique=False, index=False, nullable=True)
+    align_subsetSlifrom = Column(Integer,primary_key=False, unique=False, index=False, nullable=True)
+    align_subsetSlito = Column(Integer,primary_key=False, unique=False, index=False, nullable=True)
+    isfolder = Column(Boolean,primary_key=False, unique=False, index=False, nullable=True)
+    place_algo = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    project_displacements = Column(Integer,primary_key=False, unique=False, index=False, nullable=True)
+    project_ppdisplacements = Column(Integer,primary_key=False, unique=False, index=False, nullable=True)
+    place_ppdisplacement = Column(Integer,primary_key=False, unique=False, index=False, nullable=True)
+    thrs_reliabilitythres = Column(Float,primary_key=False, unique=False, index=False, nullable=True)
+    thrs_ppdisplacement = Column(Float,primary_key=False, unique=False, index=False, nullable=True)
+    thrs_rlbdisplacements = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    thrs_stichstacks = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    merge_artifactrmv = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    merge_bigtiff = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    merge_blend = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    merge_channel = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    merge_formats = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    merge_isotropic = Column(String,primary_key=False, unique=False, index=False, nullable=True)
+    merge_uncompressed = Column(Boolean,primary_key=False, unique=False, index=False, nullable=True)
+    step = Column(Integer, primary_key=False, index=False, default=1)
+    visitedSteps = Column(MutableList.as_mutable(PickleType), default=[])
+    selected = Column(Boolean, primary_key=False, index=False, default=False)
+    ### devices
+    instances = Column(Integer, primary_key=False, index=False, nullable=True)
+    mem = Column(Float, primary_key=False, index=False, nullable=True)
+    gpus = Column(Integer, primary_key=False, index=False, nullable=True)
+    walltime = Column(Integer, primary_key=False, index=False, nullable=True)
+    ## job
+    job = relationship("Job", uselist=False, back_populates="terastitcher")    
+
+
+
+
+
+    
+
 ##### converter ###############################
 class Convert(Base):
     __tablename__ = 'convert'
@@ -468,9 +534,12 @@ class Job(Base):
     # preprocessing
     preprocessing_id = Column(Integer, ForeignKey("preprocessing.id"), nullable=True)
     preprocessing =  relationship("Preprocessing", back_populates="job")
-    # preprocessing
+    # macros
     macro_id = Column(Integer, ForeignKey("macro.id"), nullable=True)
     macro =  relationship("Macro", back_populates="job")
+    # terastitcher
+    tera_id = Column(Integer, ForeignKey("terastitcher.id"), nullable=True)
+    terastitcher =  relationship("Terastitcher", back_populates="job")
 
     # send email not or
     sendemail = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
