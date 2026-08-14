@@ -12,6 +12,8 @@ import userinfo.mail as mail
 import userinfo.config as config
 import logging
 import pytz
+
+from userinfo import db
 logger = logging.getLogger('ippuserinfo')
 
 
@@ -1140,7 +1142,8 @@ def create_new_terastitcher(db: Session, username: str, payload: schemas.Terasti
     teraRecord.username = username
     db.add(teraRecord)
     db.commit()
-    db.flush()
+    db.refresh(teraRecord)
+    #db.flush()
     return teraRecord
 
 def update_terastitcher(db: Session, username: str, tera_id: int, payload: schemas.TerastitcherCreate ):
