@@ -9,3 +9,4 @@ shortuuid==1.0.1
 python-multipart
 python-swiftclient==3.12.0
 python-keystoneclient==4.2.0
+pbr<7.1.0
