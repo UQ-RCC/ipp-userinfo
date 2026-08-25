@@ -1125,8 +1125,13 @@ def create_macro_and_job(db: Session, username: str, email: str, macro_id:int, s
 ### terastitcher
 
 def get_tera(db: Session, username: str, path: str = None):
-    query = db.query(models.Terastitcher).\
-            filter(models.Terastitcher.username == username)
+    query = db.query(models.Terastitcher).outerjoin(
+            models.Job,
+            models.Job.tera_id == models.Terastitcher.id
+        ).filter(
+            models.Terastitcher.username == username,
+            models.Job.id == None
+        )
     if path:
         decoded_path = base64.b64decode(path).decode("utf-8")
         query = query.filter(
