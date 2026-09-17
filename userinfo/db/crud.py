@@ -647,7 +647,7 @@ def create_tera_email_contents(existing_job_dict, terastitcher, new_job_status):
         <body>
             <p>Dear Image Processing Portal user!<br />
             Your recent terastitcher job has finished. <br />
-            Job information:<br />
+            Job details:<br />
             <ul> 
             <li>Job status: {new_job_status} </li>
             <li>System job id: {existing_job_dict.get('id')} </li>
@@ -655,6 +655,40 @@ def create_tera_email_contents(existing_job_dict, terastitcher, new_job_status):
             <li>Output folder: <a href="{output_access_url}">{terastitcher.outputPath}</a></li> <br />
             
             <p> The following files/series were processed: <br />
+            <ul>"""
+    if not terastitcher.isfolder:
+        contents = f"{contents}<li>{terastitcher.xmlPath}</li>"
+    else:
+         contents = f"{contents}<li>{terastitcher.volumePath}</li>"   
+
+    contents = f"{contents}</ul><br />"
+    contents = f"{contents} Best Regards,"
+    return contents
+
+def create_tera_align_email_contents(existing_job_dict, terastitcher, new_job_status):
+    """
+    Create html contents of the emails
+    """
+    if not terastitcher.outputPath:
+        terastitcher.outputPath = "/"
+    if not terastitcher.outputPath.endswith('/'):
+        terastitcher.outputPath = terastitcher.outputPath + '/'
+    output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(terastitcher.outputPath)
+    contents = f"""
+    <html>
+        <head></head>
+        <body>
+            <p>Dear Image Processing Portal user!<br />
+            The Alignment stage of your TeraStitcher pipeline job has completed successfully. <br />
+            Job details:<br />
+            <ul> 
+            <li>Job status: {new_job_status} </li>
+            <li>System job id: {existing_job_dict.get('id')} </li>
+            <li>Slurm job id : {existing_job_dict.get('jobid')} </li>
+            <li>Output folder: <a href="{output_access_url}">{terastitcher.outputPath}</a></li> <br />
+            <li>Next stage: Project </li> <br />
+            
+            <p> The following files/series were processed in the Alignment stage: <br />
             <ul>"""
     if not terastitcher.isfolder:
         contents = f"{contents}<li>{terastitcher.xmlPath}</li>"
@@ -691,6 +725,9 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     if 'status' in update_data.keys():
         logger.debug(f"Updating job with status: {update_data.get('status')}")
         new_job_stat = update_data.get('status')
+        if 'step' in update_data.keys():
+            logger.debug(f"Updating job with step: {update_data.get('step')}")
+            new_job_step = update_data.get('step')  
         # get decon_id from existing job
         if new_job_stat in ('FAILED', 'COMPLETE'):
             decon_id = existing_job_dict.get('decon_id')
@@ -772,13 +809,23 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
             elif tera_id and not preprocessing_id and not convert_id and not decon_id and not macro_id :
                 logger.debug(f"Terastitcher job, tera_id={tera_id}")
                 if sendEmail:
-                    terastitcher = db.query(models.Terastitcher).filter(models.Terastitcher.id == tera_id).first()
-                    #subject = 'Your tera job has finished!'
-                    if (new_job_stat == 'FAILED'):
-                        subject = 'Your terastitcher job have failed!'
+                    if new_job_step and new_job_step == 'align':
+                        terastitcher = db.query(models.Terastitcher).filter(models.Terastitcher.id == tera_id).first()
+                        #subject = 'Your align job has finished!'
+                        if (new_job_stat == 'FAILED'):
+                            subject = 'Your alignment job has failed!'
+                        else:
+                            subject = 'Your alignment job has finished!'
+                        contents = create_tera_align_email_contents(existing_job_dict, terastitcher, new_job_stat)
+
                     else:
-                        subject = 'Your terastitcher job has finished!'
-                    contents = create_tera_email_contents(existing_job_dict, terastitcher, new_job_stat)
+                        terastitcher = db.query(models.Terastitcher).filter(models.Terastitcher.id == tera_id).first()
+                        #subject = 'Your tera job has finished!'
+                        if (new_job_stat == 'FAILED'):
+                            subject = 'Your terastitcher job has failed!'
+                        else:
+                            subject = 'Your terastitcher job has finished!'
+                        contents = create_tera_email_contents(existing_job_dict, terastitcher, new_job_stat)
             if sendEmail:
                 try:
                     mail.send_mail(email, subject, contents)

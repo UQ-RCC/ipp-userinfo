@@ -440,6 +440,7 @@ class TerastitcherBase(BaseModel):
     align_searchY : Optional[float] = None
     align_searchZ : Optional[float] = None
     align_spim : Optional[bool] = None
+    align_email : Optional[bool] = None
     align_subsetColfrom: Optional[int] = None
     align_subsetColto: Optional[int] = None
     align_subsetRowfrom: Optional[int] = None
@@ -465,6 +466,11 @@ class TerastitcherBase(BaseModel):
     step: int = 1
     selected: bool = False
     visitedSteps: List[int] = []
+    qos: Optional[str] = None
+    setup_arrangement_type: Optional[int] = None 
+    setup_x: Optional[float] = None
+    setup_y: Optional[float] = None
+    setup_volformat: Optional[str] = None
 
     ### devices
     instances : Optional[int] = None
