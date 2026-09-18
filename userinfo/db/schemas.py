@@ -113,7 +113,8 @@ class JobBase(BaseModel):
     sendemail: bool = True
 
 class JobCreate(JobBase):
-    pass
+    step: Optional[str] = None 
+    #pass
 
 class Job(JobBase):
     id: str
