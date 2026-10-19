@@ -79,6 +79,7 @@ userinfoapi.include_router(
     converter.router,
     prefix="/preferences", 
     tags=["convert"], 
+    dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
 
@@ -95,6 +96,7 @@ userinfoapi.include_router(
     macro.router,
     prefix="/preferences", 
     tags=["macro"], 
+    dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
 
@@ -103,6 +105,7 @@ userinfoapi.include_router(
     terastitcher.router,
     prefix="/preferences", 
     tags=["terastitcher"], 
+    dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
 
@@ -111,6 +114,7 @@ userinfoapi.include_router(
     configuration.router,
     prefix="/preferences", 
     tags=["configuration"], 
+    dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
 # resources page
@@ -118,6 +122,7 @@ userinfoapi.include_router(
     resources.router,
     prefix="/preferences", 
     tags=["resources"], 
+    dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
 
