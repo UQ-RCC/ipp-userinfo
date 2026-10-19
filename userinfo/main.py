@@ -47,6 +47,7 @@ userinfoapi.include_router(
     job.router,
     prefix="/jobs",
     tags=["jobs"],
+    dependencies=[Depends(keycloak.decode)], 
     responses={404: {"description": "Not found"}},
 )
 
@@ -79,6 +80,7 @@ userinfoapi.include_router(
     converter.router,
     prefix="/preferences", 
     tags=["convert"], 
+    dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
 
@@ -87,6 +89,7 @@ userinfoapi.include_router(
     preprocessing.router,
     prefix="/preferences", 
     tags=["preprocessing"], 
+    dependencies=[Depends(keycloak.decode)], 
     responses={404: {"description": "Not found"}},
 )
 
@@ -95,14 +98,25 @@ userinfoapi.include_router(
     macro.router,
     prefix="/preferences", 
     tags=["macro"], 
+    dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
+
+""" # terastitcher page
+userinfoapi.include_router(
+    terastitcher.router,
+    prefix="/preferences", 
+    tags=["terastitcher"], 
+    dependencies=[Depends(keycloak.decode)],
+    responses={404: {"description": "Not found"}},
+) """
 
 # configuration page
 userinfoapi.include_router(
     configuration.router,
     prefix="/preferences", 
     tags=["configuration"], 
+    dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
 # resources page
@@ -110,6 +124,7 @@ userinfoapi.include_router(
     resources.router,
     prefix="/preferences", 
     tags=["resources"], 
+    dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
 
