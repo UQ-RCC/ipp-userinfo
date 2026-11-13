@@ -1,6 +1,6 @@
 import base64
 from sqlalchemy.orm import Session
-from sqlalchemy import inspect, func, case
+from sqlalchemy import inspect, func, case, or_
 from urllib.parse import quote
 from . import models, schemas
 from typing import List
@@ -12,6 +12,8 @@ import userinfo.mail as mail
 import userinfo.config as config
 import logging
 import pytz
+
+from userinfo import db
 logger = logging.getLogger('ippuserinfo')
 
 
@@ -630,7 +632,205 @@ def create_macro_email_contents(existing_job_dict, macro, new_job_status):
     return contents
 
 
-def update_job(db:Session, jobid: str, job: schemas.JobCreate):
+def create_tera_email_contents(existing_job_dict, terastitcher, new_job_status):
+    """
+    Create html contents of the emails
+    """
+    if not terastitcher.outputPath:
+        terastitcher.outputPath = "/"
+    if not terastitcher.outputPath.endswith('/'):
+        terastitcher.outputPath = terastitcher.outputPath + '/'
+    output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(terastitcher.outputPath)
+    contents = f"""
+    <html>
+        <head></head>
+        <body>
+            <p>Dear Image Processing Portal user!<br />
+            Your recent terastitcher job has finished. <br />
+            Job details:<br />
+            <ul> 
+            <li>Job status: {new_job_status} </li>
+            <li>System job id: {existing_job_dict.get('id')} </li>
+            <li>Slurm job id : {existing_job_dict.get('jobid')} </li>
+            <li>Output folder: <a href="{output_access_url}">{terastitcher.outputPath}</a></li> <br />
+            
+            <p> The following files/series were processed: <br />
+            <ul>"""
+    if not terastitcher.isfolder:
+        contents = f"{contents}<li>{terastitcher.xmlPath}</li>"
+    else:
+         contents = f"{contents}<li>{terastitcher.volumePath}</li>"   
+
+    contents = f"{contents}</ul><br />"
+    contents = f"{contents} Best Regards,"
+    return contents
+
+def create_tera_align_email_contents(existing_job_dict, terastitcher, new_job_status):
+    """
+    Create html contents of the emails
+    """
+    failed = (new_job_status == 'FAILED')
+    if not terastitcher.outputPath:
+        terastitcher.outputPath = "/"
+    if not terastitcher.outputPath.endswith('/'):
+        terastitcher.outputPath = terastitcher.outputPath + '/'
+    output_access_url = config.get('client', 'uri') + '?component=filesmanager&path=' + quote(terastitcher.outputPath)
+
+    if failed:
+        headline = "The Alignment stage of your TeraStitcher pipeline job has failed."
+        next_stage = ""
+    else:
+        headline = "The Alignment stage of your TeraStitcher pipeline job has completed successfully."
+        next_stage = "<li>Next stage: Project </li>"
+
+
+    contents = f"""
+    <html>
+        <head></head>
+        <body>
+            <p>Dear Image Processing Portal user!<br />
+            {headline} <br />
+            Job details:<br />
+            <ul> 
+            <li>Job status: {new_job_status} </li>
+            <li>System job id: {existing_job_dict.get('id')} </li>
+            <li>Slurm job id : {existing_job_dict.get('jobid')} </li>
+            <li>Output folder: <a href="{output_access_url}">{terastitcher.outputPath}</a></li> <br />
+            {next_stage}
+            
+            <p> The following files/series were processed in the Alignment stage: <br />
+            <ul>"""
+    if not terastitcher.isfolder:
+        contents = f"{contents}<li>{terastitcher.xmlPath}</li>"
+    else:
+         contents = f"{contents}<li>{terastitcher.volumePath}</li>"   
+
+    contents = f"{contents}</ul><br />"
+    contents = f"{contents} Best Regards,"
+    return contents
+
+
+def send_job_email(db: Session, job_dict: dict, new_job_stat: str, new_job_step: str = None) -> bool:
+    """Build and send the completion/failure email for a job.
+    Returns True if an email was sent, False if nothing needed sending."""
+    decon_id = job_dict.get('decon_id')
+    preprocessing_id = job_dict.get('preprocessing_id')
+    convert_id = job_dict.get('convert_id')
+    macro_id = job_dict.get('macro_id')
+    tera_id = job_dict.get('tera_id')
+    send_email = job_dict.get('sendemail')
+    email = job_dict.get('email')
+    failed = (new_job_stat == 'FAILED')
+    subject = contents = ''
+
+    logger.info(f"Send Email details: {send_email}")
+    logger.info(f"Email details: {email}")
+    if not send_email:
+        return False
+
+    if decon_id and not preprocessing_id and not convert_id and not macro_id and not tera_id:
+        logger.debug(f"decon job, deconid={decon_id}")
+        total_jobs = db.query(models.Job).filter(models.Job.decon_id == decon_id).all()
+        finished_jobs = db.query(models.Job).\
+            filter(models.Job.decon_id == decon_id).\
+            filter(models.Job.status.in_(['FAILED', 'COMPLETE'])).\
+            all()
+        logger.debug(f"Total jobs = {len(total_jobs)}, finished jobs = {len(finished_jobs)}")
+        if len(total_jobs) != len(finished_jobs):
+            return False
+        decon = db.query(models.Decon).filter(models.Decon.id == decon_id).first()
+        series = db.query(models.Series).filter(models.Series.id == decon.series_id).first()
+        setting = db.query(models.Setting).filter(models.Setting.id == decon.setting_id).first()
+        subject = 'Your decon jobs have failed!' if failed else 'Your decon jobs have finished!'
+        contents = create_decon_email_contents(finished_jobs, series, setting, new_job_stat)
+
+    elif convert_id and not preprocessing_id and not decon_id and not macro_id and not tera_id:
+        logger.debug(f"Convert job, convertid={convert_id}")
+        convert = db.query(models.Convert).filter(models.Convert.id == convert_id).first()
+        subject = 'Your conversion job has failed!' if failed else 'Your conversion job has finished!'
+        contents = create_convert_email_contents(job_dict, convert, new_job_stat)
+
+    elif preprocessing_id and not convert_id and not decon_id and not macro_id and not tera_id:
+        logger.debug(f"Preprocessing job - preprocessingid={preprocessing_id}")
+        preprocessing = db.query(models.Preprocessing).filter(models.Preprocessing.id == preprocessing_id).first()
+        psettings = db.query(models.PSetting).filter(models.PSetting.preprocessing_id == preprocessing_id).all()
+        for psetting in psettings:
+            _serie = db.query(models.Series).filter(models.Series.id == psetting.series_id).first()
+            psetting.path = _serie.path
+        subject = 'Your preprocessing job has failed!' if failed else 'Your preprocessing job has finished!'
+        contents = create_preprocessing_email_contents(job_dict, preprocessing, psettings, new_job_stat)
+
+    elif macro_id and not preprocessing_id and not convert_id and not decon_id and not tera_id:
+        logger.debug(f"Macro job, macro_id={macro_id}")
+        macro = db.query(models.Macro).filter(models.Macro.id == macro_id).first()
+        subject = 'Your macro job has failed!' if failed else 'Your macro job has finished!'
+        contents = create_macro_email_contents(job_dict, macro, new_job_stat)
+
+    elif tera_id and not preprocessing_id and not convert_id and not decon_id and not macro_id:
+        logger.debug(f"Terastitcher job, tera_id={tera_id}, step={new_job_step}")
+        terastitcher = db.query(models.Terastitcher).filter(models.Terastitcher.id == tera_id).first()
+        if new_job_step == 'align':
+            subject = 'Your alignment job has failed!' if failed else 'Your alignment job has finished!'
+            contents = create_tera_align_email_contents(job_dict, terastitcher, new_job_stat)
+        else:
+            subject = 'Your terastitcher job has failed!' if failed else 'Your terastitcher job has finished!'
+            contents = create_tera_email_contents(job_dict, terastitcher, new_job_stat)
+
+    if not subject:
+        logger.warning(f"No email branch matched for job {job_dict.get('id')}")
+        return False
+
+    mail.send_mail(email, subject, contents)
+    return True
+
+
+def update_job(db: Session, jobid: str, job: schemas.JobCreate):
+    logger.debug(f"Updating jobid: {jobid}")
+    existing_job = get_job(db, jobid)
+    existing_job_dict = row2dict(existing_job, True)
+    logger.debug(existing_job_dict)
+    stored_item_model = schemas.JobCreate(**existing_job_dict)
+
+    if stored_item_model.status in ('FAILED', 'COMPLETE'):
+        logger.debug("Job status cannot be changed once in FAILED or COMPLETE")
+        raise CannotChangeException('Cannot changed terminated job')
+
+    update_data = job.dict(exclude_unset=True)
+    new_job_step = update_data.pop('step', None)     # not a Job column
+    new_job_stat = update_data.get('status')
+    logger.debug(f"Updating job with status: {new_job_stat}, step: {new_job_step}")
+      # align = notification only: send the email, leave the job row untouched
+    if new_job_step == 'align':
+        if new_job_stat in ('FAILED', 'COMPLETE'):
+            try:
+                send_job_email(db, existing_job_dict, new_job_stat, 'align')
+            except Exception as e:
+                logger.error(f"Problem sending align email for job {jobid}: {e}", exc_info=True)
+        return
+    
+    if update_data.get('status') in ('FAILED', 'COMPLETE'):
+        if update_data.get('end') is None:
+            update_data['end'] = datetime.datetime.utcnow()
+
+    updated_item = stored_item_model.copy(update=update_data)
+    db.query(models.Job).\
+        filter(models.Job.id == jobid).\
+        update(updated_item.dict(exclude={'step'}))
+    db.flush()
+    db.commit()
+
+    
+    if new_job_stat not in ('FAILED', 'COMPLETE'):
+        return
+
+    # The job is already saved. A notification failure must not fail the update.
+    try:
+        send_job_email(db, existing_job_dict, new_job_stat, new_job_step)
+    except Exception as e:
+        logger.error(f"Problem sending email for job {jobid}: {e}", exc_info=True)
+
+
+""" def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     logger.debug(f"Updating jobid: {jobid}")
     existing_job = get_job(db, jobid)
     existing_job_dict = row2dict(existing_job, True)
@@ -652,92 +852,118 @@ def update_job(db:Session, jobid: str, job: schemas.JobCreate):
     db.flush()
     db.commit()
     # check if the job stat is FAIL or COMPLETE
-    if 'status' in update_data.keys():
-        logger.debug(f"Updating job with status: {update_data.get('status')}")
-        new_job_stat = update_data.get('status')
-        # get decon_id from existing job
-        if new_job_stat in ('FAILED', 'COMPLETE'):
-            decon_id = existing_job_dict.get('decon_id')
-            preprocessing_id = existing_job_dict.get('preprocessing_id')
-            convert_id = existing_job_dict.get('convert_id')
-            macro_id = existing_job_dict.get('macro_id')
-            sendEmail = existing_job_dict.get('sendemail')
-            email = existing_job_dict.get('email')
-            subject = contents = ''
-            logger.info(f"Send Email details: {sendEmail}")
-            logger.info(f"Email details: {email}")
+    if 'status' not in update_data:
+        return
+    #if 'status' in update_data.keys():
+    logger.debug(f"Updating job with status: {update_data.get('status')}")
+    new_job_stat = update_data.get('status')
+    new_job_step = update_data.get('step')
+    logger.debug(f"Updating job with status: {new_job_stat}, step: {new_job_step}")
+    # get decon_id from existing job
+    if new_job_stat in ('FAILED', 'COMPLETE'):
+        decon_id = existing_job_dict.get('decon_id')
+        preprocessing_id = existing_job_dict.get('preprocessing_id')
+        convert_id = existing_job_dict.get('convert_id')
+        macro_id = existing_job_dict.get('macro_id')
+        tera_id= existing_job_dict.get('tera_id')
+        sendEmail = existing_job_dict.get('sendemail')
+        email = existing_job_dict.get('email')
+        subject = contents = ''
+        logger.info(f"Send Email details: {sendEmail}")
+        logger.info(f"Email details: {email}")
 
-            ######## decon job
-            if not preprocessing_id and not convert_id and not macro_id and decon_id: 
-                logger.debug(f"decon job, deconid={decon_id}")
-                total_jobs = db.query(models.Job).filter(models.Job.decon_id == decon_id).all()
-                # meaning a new job is done/or failed
-                finished_jobs = db.query(models.Job).\
-                    filter(models.Job.decon_id == decon_id).\
-                    filter(models.Job.status.in_(['FAILED', 'COMPLETE'])).\
-                    all()
-                logger.debug(f"Total jobs = {len(total_jobs)}, finished jobs = {len(finished_jobs)}")
-                # logger.debug(total_jobs)
-                # logger.debug(finished_jobs)
-                if len(total_jobs) == len(finished_jobs) and sendEmail:
-                    # get settings and series
-                    decon = db.query(models.Decon).filter(models.Decon.id == decon_id).first()
-                    series = db.query(models.Series).filter(models.Series.id == decon.series_id).first()
-                    setting = db.query(models.Setting).filter(models.Setting.id == decon.setting_id).first()
-                    logger.debug(f"Sending user email to {existing_job_dict.get('email')}")
-                    # send email
-                    if (new_job_stat == 'FAILED'):
-                        subject = 'Your decon jobs have failed!'
-                    else:
-                        subject = 'Your decon jobs have finished!'
-                    contents = create_decon_email_contents(finished_jobs, series, setting, new_job_stat)
+        ######## decon job
+        if not preprocessing_id and not convert_id and not macro_id and not tera_id and decon_id: 
+            logger.debug(f"decon job, deconid={decon_id}")
+            total_jobs = db.query(models.Job).filter(models.Job.decon_id == decon_id).all()
+            # meaning a new job is done/or failed
+            finished_jobs = db.query(models.Job).\
+                filter(models.Job.decon_id == decon_id).\
+                filter(models.Job.status.in_(['FAILED', 'COMPLETE'])).\
+                all()
+            logger.debug(f"Total jobs = {len(total_jobs)}, finished jobs = {len(finished_jobs)}")
+            # logger.debug(total_jobs)
+            # logger.debug(finished_jobs)
+            if len(total_jobs) == len(finished_jobs) and sendEmail:
+                # get settings and series
+                decon = db.query(models.Decon).filter(models.Decon.id == decon_id).first()
+                series = db.query(models.Series).filter(models.Series.id == decon.series_id).first()
+                setting = db.query(models.Setting).filter(models.Setting.id == decon.setting_id).first()
+                logger.debug(f"Sending user email to {existing_job_dict.get('email')}")
+                # send email
+                if (new_job_stat == 'FAILED'):
+                    subject = 'Your decon jobs have failed!'
                 else:
-                    sendEmail = False
-            #### convert job
-            elif not preprocessing_id and convert_id and not decon_id and not macro_id:
-                logger.debug(f"Convert job, convertid={convert_id}")
-                if sendEmail:
-                    convert = db.query(models.Convert).filter(models.Convert.id == convert_id).first()
-                    #subject = 'Your conversion job has finished!'
-                    if (new_job_stat == 'FAILED'):
-                        subject = 'Your conversion job have failed!'
-                    else:
-                        subject = 'Your conversion job has finished!'
-                    contents = create_convert_email_contents(existing_job_dict, convert, new_job_stat)
-            #### preprocess job
-            elif preprocessing_id and not convert_id and not decon_id and not macro_id:
-                logger.debug(f"Preprocessing job - preprocessingid={preprocessing_id}")
-                if sendEmail:
-                    preprocessing = db.query(models.Preprocessing).filter(models.Preprocessing.id == preprocessing_id).first()
-                    # get psettings
-                    psettings = db.query(models.PSetting).filter(models.PSetting.preprocessing_id == preprocessing_id).all()
-                    for psetting in psettings:
-                        _serie = db.query(models.Series).filter(models.Series.id == psetting.series_id).first()
-                        psetting.path = _serie.path
-                    #subject = 'Your preprocessing job has finished!'
-                    if (new_job_stat == 'FAILED'):
-                        subject = 'Your preprocessing job have failed!'
-                    else:
-                        subject = 'Your preprocessing job has finished!'
-                    contents = create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings, new_job_stat)
-            #### macro job
-            elif macro_id and not preprocessing_id and not convert_id and not decon_id:
-                logger.debug(f"Macro job, macro_id={macro_id}")
-                if sendEmail:
-                    macro = db.query(models.Macro).filter(models.Macro.id == macro_id).first()
-                    #subject = 'Your macro job has finished!'
-                    if (new_job_stat == 'FAILED'):
-                        subject = 'Your macro job have failed!'
-                    else:
-                        subject = 'Your macro job has finished!'
-                    contents = create_macro_email_contents(existing_job_dict, macro, new_job_stat)
+                    subject = 'Your decon jobs have finished!'
+                contents = create_decon_email_contents(finished_jobs, series, setting, new_job_stat)
+            else:
+                sendEmail = False
+        #### convert job
+        elif not preprocessing_id and convert_id and not decon_id and not macro_id and not tera_id:
+            logger.debug(f"Convert job, convertid={convert_id}")
             if sendEmail:
-                try:
-                    mail.send_mail(email, subject, contents)
-                except Exception as e:
-                    logger.error(f"Problem sending email: {str(e)}", exc_info=True)
-                    raise
-                
+                convert = db.query(models.Convert).filter(models.Convert.id == convert_id).first()
+                #subject = 'Your conversion job has finished!'
+                if (new_job_stat == 'FAILED'):
+                    subject = 'Your conversion job have failed!'
+                else:
+                    subject = 'Your conversion job has finished!'
+                contents = create_convert_email_contents(existing_job_dict, convert, new_job_stat)
+        #### preprocess job
+        elif preprocessing_id and not convert_id and not decon_id and not macro_id and not tera_id:
+            logger.debug(f"Preprocessing job - preprocessingid={preprocessing_id}")
+            if sendEmail:
+                preprocessing = db.query(models.Preprocessing).filter(models.Preprocessing.id == preprocessing_id).first()
+                # get psettings
+                psettings = db.query(models.PSetting).filter(models.PSetting.preprocessing_id == preprocessing_id).all()
+                for psetting in psettings:
+                    _serie = db.query(models.Series).filter(models.Series.id == psetting.series_id).first()
+                    psetting.path = _serie.path
+                #subject = 'Your preprocessing job has finished!'
+                if (new_job_stat == 'FAILED'):
+                    subject = 'Your preprocessing job have failed!'
+                else:
+                    subject = 'Your preprocessing job has finished!'
+                contents = create_preprocessing_email_contents(existing_job_dict, preprocessing, psettings, new_job_stat)
+        #### macro job
+        elif macro_id and not preprocessing_id and not convert_id and not decon_id and not tera_id:
+            logger.debug(f"Macro job, macro_id={macro_id}")
+            if sendEmail:
+                macro = db.query(models.Macro).filter(models.Macro.id == macro_id).first()
+                #subject = 'Your macro job has finished!'
+                if (new_job_stat == 'FAILED'):
+                    subject = 'Your macro job have failed!'
+                else:
+                    subject = 'Your macro job has finished!'
+                contents = create_macro_email_contents(existing_job_dict, macro, new_job_stat)
+        #### tera job
+        elif tera_id and not preprocessing_id and not convert_id and not decon_id and not macro_id :
+            logger.debug(f"Terastitcher job, tera_id={tera_id}")
+            if sendEmail:
+                if new_job_step and new_job_step == 'align':
+                    terastitcher = db.query(models.Terastitcher).filter(models.Terastitcher.id == tera_id).first()
+                    #subject = 'Your align job has finished!'
+                    if (new_job_stat == 'FAILED'):
+                        subject = 'Your alignment job has failed!'
+                    else:
+                        subject = 'Your alignment job has finished!'
+                    contents = create_tera_align_email_contents(existing_job_dict, terastitcher, new_job_stat)
+
+                else:
+                    terastitcher = db.query(models.Terastitcher).filter(models.Terastitcher.id == tera_id).first()
+                    #subject = 'Your tera job has finished!'
+                    if (new_job_stat == 'FAILED'):
+                        subject = 'Your terastitcher job has failed!'
+                    else:
+                        subject = 'Your terastitcher job has finished!'
+                    contents = create_tera_email_contents(existing_job_dict, terastitcher, new_job_stat)
+        if sendEmail:
+            try:
+                mail.send_mail(email, subject, contents)
+            except Exception as e:
+                logger.error(f"Problem sending email: {str(e)}", exc_info=True)
+                raise
+                 """
 
 
 def delete_job(db:Session, username: str, jobid: str):
@@ -1021,6 +1247,7 @@ def update_psetting(db: Session, username: str, psetting_id: int, psetting: sche
 def get_macro(db: Session, username: str):
     return db.query(models.Macro).\
             filter(models.Macro.username == username).\
+            order_by(models.Macro.id.desc()).\
             first()
 
 def create_new_macro(db: Session, username: str, payload: schemas.MacroCreate):
@@ -1072,6 +1299,98 @@ def create_macro_and_job(db: Session, username: str, email: str, macro_id:int, s
     db.flush()
     db.commit()
     return job
+
+### terastitcher
+
+def get_tera(db: Session, username: str, path: str = None):
+    query = db.query(models.Terastitcher).outerjoin(
+            models.Job,
+            models.Job.tera_id == models.Terastitcher.id
+        ).filter(
+            models.Terastitcher.username == username,
+            models.Job.id == None
+        )
+    if path:
+        decoded_path = base64.b64decode(path).decode("utf-8")
+        query = query.filter(
+            or_(
+                models.Terastitcher.xmlPath == decoded_path,
+                models.Terastitcher.volumePath == decoded_path
+            )
+        )
+    return query.order_by(models.Terastitcher.id.desc()).first()
+
+def create_new_terastitcher(db: Session, username: str, payload: schemas.TerastitcherCreate):
+    teraRecord = models.Terastitcher(**payload.dict())
+    teraRecord.username = username
+    db.add(teraRecord)
+    db.commit()
+    db.refresh(teraRecord)
+    #db.flush()
+    return teraRecord
+
+def update_terastitcher(db: Session, username: str, tera_id: int, payload: schemas.TerastitcherCreate ):
+    a_teraRecord = get_a_teraRecord(db, username, tera_id)
+    if a_teraRecord == None:
+        raise NotfoundException(f"Cannot find terastitcher with id={tera_id}")
+    for key, value in payload.dict(exclude_unset=True).items():
+        setattr(a_teraRecord, key, value)
+
+    db.commit()
+    db.refresh(a_teraRecord)    
+
+    
+
+# get a terastitcher
+def get_a_teraRecord(db: Session, username: str, tera_id: int):
+    return db.query(models.Terastitcher).\
+            filter(models.Terastitcher.id == tera_id).\
+            filter(models.Terastitcher.username == username).\
+            first()
+
+
+
+""" def create_tera_and_job(db: Session, username: str, email: str, tera_id:int, sendemail: bool):
+    terastitcher = get_a_teraRecord(db, username, tera_id)
+    logger.debug(f"terastitcher {terastitcher}")
+    if not terastitcher: 
+        raise NotfoundException(f"Cannot find terastitcher with id={tera_id}")
+    #create new terastitcher for the job first
+    db_terastitcher = models.Terastitcher(**terastitcher) 
+    db.add(db_terastitcher)
+    db.flush()
+    #now create job
+    job = models.Job(id=shortuuid.uuid(), username=username, email=email, decon_id=None, convert_id=None, preprocessing_id=None, macro_id=None, tera_id=db_terastitcher.id, sendemail=sendemail )
+    db.add(job)
+    db.flush()
+    db.commit()
+    return job """
+
+def create_tera_and_job(db: Session, username: str, email: str, tera_id: int, sendemail: bool):
+    terastitcher = get_a_teraRecord(db, username, tera_id)
+    if not terastitcher:
+        raise NotfoundException(f"Cannot find terastitcher with id={tera_id}")
+
+    # clone the existing Terastitcher record into a new row for this job
+    tera_data = {
+        c.name: getattr(terastitcher, c.name)
+        for c in terastitcher.__table__.columns
+        if c.name != "id"  # exclude PK so a new row is inserted
+    }
+    db_terastitcher = models.Terastitcher(**tera_data)
+    db.add(db_terastitcher)
+    db.flush()
+
+    job = models.Job(id=shortuuid.uuid(), username=username, email=email,
+                      decon_id=None, convert_id=None, preprocessing_id=None,
+                      macro_id=None, tera_id=db_terastitcher.id, sendemail=sendemail)
+    db.add(job)
+    db.flush()
+    db.commit()
+    return job
+
+
+
 
 ###Update api settings
 

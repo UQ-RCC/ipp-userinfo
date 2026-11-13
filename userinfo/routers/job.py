@@ -39,12 +39,14 @@ def get_job(    jobid: str,
 def update_job(    jobid: str,
                 jobdata: udb.schemas.JobCreate,
                 db: Session = Depends(udb.get_db)):
-    logger.debug("Updating job %s, new status: %s" %(jobid, jobdata.status), exc_info=True)
+    logger.debug("Updating job %s, new status: %s" %(jobid, jobdata.status))
     try:
         return udb.crud.update_job(db, jobid, jobdata)
-    except udb.crud.CannotChangeException: 
-        return HTTPException(status_code=304, detail="Unchanged. job state is either in FAIL or COMPLETE")    
+    except udb.crud.CannotChangeException:
+        raise HTTPException(status_code=409,
+                            detail="Unchanged. Job state is already FAILED or COMPLETE")    
     except Exception as e:
-        logger.error("Problem updating job", exc_info=True) 
+        logger.error("Problem updating job %s" %(jobid), exc_info=True) 
+        db.rollback()
         logger.debug(e, exc_info=True)
-        return HTTPException(status_code=500, detail="Problem updating job")
+        raise HTTPException(status_code=500, detail="Problem updating job")

@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import user, job, fileexplorer, decon, version, converter, preprocessing, macro, configuration, resources
+from .routers import user, job, fileexplorer, decon, version, converter, preprocessing, macro, configuration, resources, terastitcher
 import userinfo.config as config
 from logging.handlers import TimedRotatingFileHandler
 import json
@@ -81,6 +81,7 @@ userinfoapi.include_router(
     prefix="/preferences", 
     tags=["convert"], 
     dependencies=[Depends(keycloak.decode)],
+    dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
 
@@ -98,6 +99,15 @@ userinfoapi.include_router(
     macro.router,
     prefix="/preferences", 
     tags=["macro"], 
+    dependencies=[Depends(keycloak.decode)],
+    responses={404: {"description": "Not found"}},
+)
+
+# terastitcher page
+userinfoapi.include_router(
+    terastitcher.router,
+    prefix="/preferences", 
+    tags=["terastitcher"], 
     dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
